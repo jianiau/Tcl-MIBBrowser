@@ -1,0 +1,26 @@
+Bignum v1.0 - a critcl tcl wrapper to libgmp
+
+This directory provides these packages:
+ bigint - which provides wrappers for arbitrary precision integers
+ bigfloat - which provides wrappers for arbitrary precision floats
+ bignum - both bigint and bigfloat
+
+DEPENDENCIES:
+
+This works with libgmp3 4.1.1 or similar under Linux
+	get it from any gnu archive (if you haven't got it)
+
+To recompile it, you'll need the latest version of critcl
+	http://mini.net/sdarchive/ is where you'll find it.
+
+INSTALL:
+
+unpack this in /usr/lib, /usr/local/lib, or wherever your tcl resides.
+
+AUTHOR:
+
+Colin McCormack <colin@field.medicine.adelaide.edu.au>
+
+LICENSE:
+
+It's licensed under GPL - of necessity, as libgmp is.
