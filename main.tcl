@@ -70,6 +70,8 @@ set ::result_clear 1
 
 # update value via inifile
 
+
+
 if [file exist $confPath/config.ini] {
 	set inifd [::ini::open $confPath/config.ini r]
 	catch {
@@ -224,8 +226,8 @@ grid columnconfigure $NB 0 -weight 1
 # |            |=========================|
 # |            |                         |
 # |            |      result             |
-# |============|                         |
-# |  search    |                         |
+# |============|=========================|
+# |  search    |     search              |
 # ========================================
 
 set LF_AGENT  [ttk::labelframe $QUERY.lf_agent -text "SMMP agent"]
@@ -253,11 +255,13 @@ grid rowconfig $PW.fr_left 0 -weight 1
 
 
 set LF_MIBINFO [ttk::labelframe $PW.fr_right.lf_mibinfo -text "MIB Info"]
-set LF_RESULT  [ttk::labelframe $PW.fr_right.lf_result  -text "Result"] 
+set LF_RESULT  [ttk::labelframe $PW.fr_right.lf_result  -text "Result"]
+set LF_SEARCH2 [ttk::labelframe $PW.fr_right.lf_search  -text "Search"]
 if {$::show_mib_info} {
 grid $LF_MIBINFO -row 0 -column 0 -sticky we
 }
-grid $LF_RESULT  -row 1 -column 0 -sticky news
+grid $LF_RESULT   -row 1 -column 0 -sticky news
+grid $LF_SEARCH2  -row 2 -column 0 -sticky news
 grid columnconfig $PW.fr_right 0 -weight 1
 grid rowconfig $PW.fr_right 1 -weight 1
 
@@ -270,13 +274,16 @@ pack  $LF_AGENT.en_ip -side left -fill both -padx 5
 ttk::entry $LF_CMD.en_cmd -textvariable ::snmp::cmd 
 set ::snmp::cmd ""
 ttk::button $LF_CMD.bt_cmd -text "Run" -command {
+	log_result "\n==== Start ====\n"
+	update
 	if [catch {eval $::snmp::cmd} ret] {
-		log_result "err: $ret\n"
+		log_result "err: $ret\n" err
 	} else {
 		foreach line $ret {
 			log_result "$line\n"
 		}
 	}
+	log_result "==== Finish ====\n"
 }
 pack $LF_CMD.en_cmd -fill both -side left -expand 1 -padx 5 
 pack $LF_CMD.bt_cmd -side right
@@ -339,11 +346,44 @@ set SH_MIBINFO [::ttk::scrollbar $LF_MIBINFO.sh -orient horizontal -command [lis
 set SV_MIBINFO [::ttk::scrollbar $LF_MIBINFO.sv -orient vertical   -command [list $MIBINFO yview]]
 $MIBINFO configure -yscrollcommand [list $SV_MIBINFO set]
 $MIBINFO configure -xscrollcommand [list $SH_MIBINFO set] 
+
+
+set ::searchresult ""
+set ::res_direction  down
+ttk::entry       $LF_SEARCH2.en_search -textvariable ::searchresult
+#-validate key -validatecommand "check_search_input %S"
+
+ttk::radiobutton $LF_SEARCH2.rb_up   -text "Up"   -value up   -variable ::res_direction 
+ttk::radiobutton $LF_SEARCH2.rb_down -text "Down" -value down -variable ::res_direction
+ttk::button      $LF_SEARCH2.bt_search -text "Go" -command {search_result}
+grid $LF_SEARCH2.en_search -row 0 -column 0 -sticky we -padx 5
+grid $LF_SEARCH2.rb_up     -row 0 -column 1 -sticky we -padx 5
+grid $LF_SEARCH2.rb_down   -row 0 -column 2 -sticky we -padx 5
+grid $LF_SEARCH2.bt_search -row 0 -column 3 -sticky we -padx 5
+
+bind $LF_SEARCH2.en_search <Return> {
+	search_result
+}
+
+bind $LF_SEARCH2.en_search <KP_Enter> {
+	search_result
+}
+
+bind $LF_SEARCH2.en_search <Prior> {
+	set ::res_direction  up
+	search_result
+}
+
+bind $LF_SEARCH2.en_search <Next> {
+	set ::res_direction down
+	search_result
+}
+
 grid $MIBINFO $SV_MIBINFO -sticky "news"
 grid $SH_MIBINFO -columnspan 2 -sticky "we"
 grid columnconfigure $LF_MIBINFO 0 -weight 1
 grid rowconfigure $LF_MIBINFO 0 -weight 1
-
+grid columnconfig $LF_SEARCH2 0 -weight 1
 
 ## end Query tag
 
@@ -363,4 +403,7 @@ buildtree
 $TREE selection add 1
 change_tree_dsp
 focus $TREE
+
+
+$RESULT tag configure err -foreground red
 

@@ -6,209 +6,15 @@ proc Sleep {msec} {
 	}
 	vwait aa
 }
-proc log_result {msg {color ""}} {
+proc log_result {msg {tag ""}} {
 	global RESULT
-	$RESULT insert end $msg
+	$RESULT insert end $msg $tag
 	$RESULT see end
 }
 proc log_clear {} {
 	global RESULT
 	$RESULT delete 0.0 end
 }
-
-
-
-proc snmpget_gui {{method normal}} {
-
-	foreach {ret index_list} [get_index] {}
-	if {!$ret} {
-		log_result "err: get index fail\n"
-		log_result "============================================================================\n"
-		return
-	}
-	
-	if { [llength $index_list] == 1} {
-		if {$method=="dump"} {
-			set get_oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
-			snmpdump_cmd $get_oid
-			return
-		} else {
-			set get_oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
-			snmpget_cmd $get_oid
-			return
-		}
-	}		
-	
-	catch {destroy .snmpget}
-	set p [toplevel .snmpget]
-	wm title $p "Select index"
-	wm resizable $p 0 0 
-	wm transient $p [winfo toplevel [winfo parent $p]]
-	ttk::combobox .snmpget.cb -value $index_list
-	if {$method=="dump"} {
-		ttk::button   .snmpget.bt -text "Get" -command {snmpdump_cmd $::snmp::OID.[.snmpget.cb get]}
-	} else {
-		ttk::button   .snmpget.bt -text "Get" -command {snmpget_cmd $::snmp::OID.[.snmpget.cb get]}	
-	}	
-
-	.snmpget.cb current 0	
-	grid .snmpget.cb -row 0 -column 0 -sticky we -padx 5 -pady 5
-	grid .snmpget.bt -row 1 -column 0 -sticky we -padx 5 -pady 5
-	focus .snmpget.cb
-
-	::tk::PlaceWindow $p 
-#	tk::SetFocusGrab $p $p
-	grab $p
-}
-
-proc get_index {} {
-	if [catch {eval snmp_walk [::snmp::cmdopt] -OQnb $::snmp::agentip  $::snmp::OID} ret] {
-	puts ========ret=$ret
-		return 0
-	} else {
-		set index_list ""
-		foreach vbind $ret {
-			set retoid [string trim [lindex [split $vbind =] 0]]
-			regexp "[set ::snmp::OID]\.(.+)" [string trimleft $retoid .] match index
-			lappend index_list $index
-		}
-		return [list 1	$index_list]
-	}
-}
-
-proc snmpget_cmd {oid} {
-	global RESULT
-	if {$::result_clear} {$RESULT delete 1.0 end}
-	set ::snmp::cmd "snmp_get [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $oid"
-	if [catch {eval snmp_get [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $oid } ret] {
-		log_result "Err: $ret \n"	
-	} else {
-		log_result "[lindex $ret 0]\n"
-	}
-	log_result "============================================================================\n"
-}
-
-proc snmpdump_cmd {oid} {
-	global RESULT confPath
-	if {$::result_clear} {$RESULT delete 1.0 end}
-	#set ::snmp::cmd "snmp_get [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $oid"
-	if [catch {eval snmp_get [::snmp::cmdopt] -Oqvx -IJ  $::snmp::agentip  $oid } ret] {
-		log_result "*************Err: $ret \n"	
-	} else {
-		set hexdata [join [split [lindex $ret 0] " \n\""] ""]
-		set dumpfile [tk_getSaveFile -initialdir $confPath/dumpfile]
-		if {$dumpfile!=""} {
-			set fd [open $dumpfile w] 
-			fconfigure $fd -translation binary			
-			puts -nonewline $fd [binary format H* $hexdata]
-			close $fd
-		}
-		log_result "Dump data to $dumpfile\n"
-		
-	}
-	log_result "============================================================================\n"
-}
-
-proc snmpset_cmd {oid} {
-	global RESULT
-	if {$::result_clear} {$RESULT delete 1.0 end}
-	set ::snmp::cmd "snmp_set [::snmp::cmdopt w] [::snmp::outfmt] $::snmp::agentip  $oid $::snmp::TYPE $::snmp::setvalue"
-	if [catch {eval snmp_set [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $oid $::snmp::TYPE $::snmp::setvalue } ret] {
-		log_result "Err: $ret \n"	
-	} else {
-		log_result "[lindex $ret 0]\n"
-	}
-	log_result "============================================================================\n"
-	
-}
-
-proc snmpset_gui {} {
-	global TREE
-    foreach {ret index_list} [get_index] {}
-	set oid_list ""
-	if {!$ret} {
-    	#
-    } else {
-    	foreach ind $index_list {
-    		lappend oid_list "[set ::snmp::OID].$ind"
-    	}
-    }
-	catch {destroy .snmpset}
-	set w [toplevel .snmpset]
-	wm title $w "Snmpset"
-	wm resizable $w 0 0 
-	wm transient $w [winfo toplevel [winfo parent $w]]
-	
-	
-	ttk::labelframe $w.lf1 -text "Remote SNMP agent"
-	ttk::entry $w.lf1.en -textvariable ::snmp::agentip
-	ttk::button $w.lf1.bt_conf -text "SNMP Setting" -command snmp_protocol
-#	ttk::button $w.lf1.bt2_conf
-	
-	ttk::labelframe $w.lf2 -text "OID to Set"
-	ttk::combobox $w.lf2.cb -textvariable ::snmp::OID -values $oid_list
-	ttk::button $w.lf2.bt_conf
-	.snmpset.lf2.cb curren 0
-	ttk::labelframe $w.lf3 -text "Value to Set"
-	ttk::entry $w.lf3.en -textvariable ::snmp::setvalue
-	ttk::button $w.lf3.bt_conf -text "Get" -command {
-		#puts [$w.lf2.cb get]
-		#puts w=$w
-		set oid [.snmpset.lf2.cb get]
-		set ::snmp::setvalue [lindex [eval snmp_get [::snmp::cmdopt]  -OqvU -IJ $::snmp::agentip  $oid] 0]
-	}
-	ttk::button $w.lf3.bt2_conf -text "Set" -command {
-		snmpset_cmd $oid
-	}
-	
-	ttk::separator $w.sep -orient horizontal  
-	
-	ttk::labelframe $w.lf4 -text "Syntax"
-	ttk::radiobutton $w.lf4.rb1 -text "INTEGER" -variable ::snmp::TYPE -value i
-	ttk::radiobutton $w.lf4.rb2 -text "UINTEGER" -variable ::snmp::TYPE -value u
-	ttk::radiobutton $w.lf4.rb3 -text "TIMETICKS" -variable ::snmp::TYPE -value t
-	ttk::radiobutton $w.lf4.rb4 -text "IPADDRESS" -variable ::snmp::TYPE -value a
-	ttk::radiobutton $w.lf4.rb5 -text "OBJID" -variable ::snmp::TYPE -value o
-	ttk::radiobutton $w.lf4.rb6 -text "STRING" -variable ::snmp::TYPE -value s
-	ttk::radiobutton $w.lf4.rb7 -text "HEX STRING" -variable ::snmp::TYPE -value x
-	ttk::radiobutton $w.lf4.rb8 -text "DEC STRING" -variable ::snmp::TYPE -value d
-	ttk::radiobutton $w.lf4.rb9 -text "BITS" -variable ::snmp::TYPE -value b
-	# ttk::radiobutton $w.lf4.rb3 -text "INTEGER64" -variable snmp_TYPE -value I
-	# ttk::radiobutton $w.lf4.rb3 -text "UINTEGER64" -variable snmp_TYPE -value U
-	# ttk::radiobutton $w.lf4.rb3 -text "float" -variable snmp_TYPE -value F
-	# ttk::radiobutton $w.lf4.rb3 -text "double" -variable snmp_TYPE -value D
-
-	# TYPE: one of i, u, t, a, o, s, x, d, b
-	# i: INTEGER, u: unsigned INTEGER, t: TIMETICKS, a: IPADDRESS
-	# o: OBJID, s: STRING, x: HEX STRING, d: DECIMAL STRING, b: BITS
-	# U: unsigned int64, I: signed int64, F: float, D: double
-	   
-	grid $w.lf1 -sticky we -padx 5
-	grid $w.lf1.en      -row 0 -column 0 -padx 2 -sticky we
-	grid $w.lf1.bt_conf -row 0 -column 1 -padx 2 -sticky w
-#$w.lf1.bt_conf $w.lf1.bt2_conf -sticky we -padx 5
-	grid columnconfig $w.lf1 0 -weight 1
-	
-	
-	grid $w.lf2 -sticky we -padx 5
-	grid $w.lf2.cb $w.lf2.bt_conf -sticky we -padx 5
-	grid columnconfig $w.lf2 0 -weight 1
-	
-	grid $w.lf3 -sticky we -padx 5
-	grid $w.lf3.en $w.lf3.bt_conf $w.lf3.bt2_conf -sticky we -padx 5
-	grid columnconfig $w.lf3 0 -weight 1
-	grid $w.sep -sticky we
-	
-	grid $w.lf4 -sticky we -padx 5
-	grid $w.lf4.rb1 $w.lf4.rb2 $w.lf4.rb3 -sticky w -padx 5 -pady 5
-	grid $w.lf4.rb4 $w.lf4.rb5 $w.lf4.rb6 -sticky w -padx 5 -pady 5
-	grid $w.lf4.rb7 $w.lf4.rb8 $w.lf4.rb9 -sticky w -padx 5 -pady 5
-	
-	::tk::PlaceWindow $w 
-	grab $w
-
-}
-
 
 
 proc list_search {} {
@@ -622,26 +428,26 @@ proc font_setup {} {
 
 	wm title $p "Font Setting"
 	wm transient $p [winfo toplevel [winfo parent $p]]
-	
+	tk fontchooser configure -parent .font_setup
 	ttk::label  .font_setup.lb_tree      -text "MIB Tree:"
 	ttk::label  .font_setup.lb_tree_font -text "$::tree_font"
-	ttk::button .font_setup.lb_tree_set  -text "Set" -command {
-		tk fontchooser show
+	ttk::button .font_setup.lb_tree_set  -text "Set" -command {		
 		tk fontchoose configure -font [lindex [$TREE element cget elemText -font] 0] -command [list set_tree_font .font_setup.lb_tree_font ::tree_font]
+		tk fontchooser show
 	}
 
 	ttk::label  .font_setup.lb_info      -text "MIB info:"
 	ttk::label  .font_setup.lb_info_font -text "$::info_font"
-	ttk::button .font_setup.lb_info_set  -text "Set" -command {
-		tk fontchooser show
+	ttk::button .font_setup.lb_info_set  -text "Set" -command {		
 		tk fontchoose configure -font [$MIBINFO cget -font] -command [list set_font $MIBINFO .font_setup.lb_info_font ::info_font]
+		tk fontchooser show
 	}
 
 	ttk::label  .font_setup.lb_ret      -text "Result:"
 	ttk::label  .font_setup.lb_ret_font -text "$::result_font"
-	ttk::button .font_setup.lb_ret_set  -text "Set" -command {
-		tk fontchooser show
+	ttk::button .font_setup.lb_ret_set  -text "Set" -command {		
 		tk fontchoose configure -font [$RESULT cget -font] -command [list set_font $RESULT .font_setup.lb_ret_font ::result_font]
+		tk fontchooser show
 	}
 
 	grid .font_setup.lb_tree       -row 0 -column 0 -padx 2 -pady 2 -sticky w
@@ -703,6 +509,198 @@ proc change_tree_dsp {} {
 }
 
 
+proc snmpget_gui {{method normal}} {
+
+	foreach {ret index_list} [get_index] {}
+	if {!$ret} {
+		log_result "err: get index fail\n"
+		log_result "============================================================================\n"
+		return
+	}
+	
+	if { [llength $index_list] == 1} {
+		if {$method=="dump"} {
+			set get_oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
+			snmpdump_cmd $get_oid
+			return
+		} else {
+			set get_oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
+			snmpget_cmd $get_oid
+			return
+		}
+	}		
+	
+	catch {destroy .snmpget}
+	set p [toplevel .snmpget]
+	wm title $p "Select index"
+	wm resizable $p 0 0 
+	wm transient $p [winfo toplevel [winfo parent $p]]
+	ttk::combobox .snmpget.cb -value $index_list
+	if {$method=="dump"} {
+		ttk::button   .snmpget.bt -text "Get" -command {snmpdump_cmd $::snmp::OID.[.snmpget.cb get]}
+	} else {
+		ttk::button   .snmpget.bt -text "Get" -command {snmpget_cmd $::snmp::OID.[.snmpget.cb get]}	
+	}	
+
+	.snmpget.cb current 0	
+	grid .snmpget.cb -row 0 -column 0 -sticky we -padx 5 -pady 5
+	grid .snmpget.bt -row 1 -column 0 -sticky we -padx 5 -pady 5
+	focus .snmpget.cb
+	::tk::PlaceWindow $p 
+	grab $p
+}
+
+proc get_index {} {
+	if [catch {eval snmp_walk [::snmp::cmdopt] -OQnb $::snmp::agentip  $::snmp::OID} ret] {
+	#puts ========ret=$ret
+		return 0
+	} else {
+		set index_list ""
+		foreach vbind $ret {
+			set retoid [string trim [lindex [split $vbind =] 0]]
+			regexp "[set ::snmp::OID]\.(.+)" [string trimleft $retoid .] match index
+			lappend index_list $index
+		}
+		return [list 1	$index_list]
+	}
+}
+
+proc snmpget_cmd {oid} {
+	global RESULT
+	if {$::result_clear} {$RESULT delete 1.0 end}
+	set ::snmp::cmd "snmp_get [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $oid"
+	log_result "\n==== Start ====\n"
+	if [catch {eval snmp_get [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $oid } ret] {
+		log_result "Err: $ret \n"	
+	} else {
+		log_result "1.  [lindex $ret 0]\n"
+	}
+	log_result "==== Finish ====\n"
+}
+
+proc snmpdump_cmd {oid} {
+	global RESULT confPath
+	if {$::result_clear} {$RESULT delete 1.0 end}
+	#set ::snmp::cmd "snmp_get [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $oid"
+	log_result "\n==== Start ====\n"
+	if [catch {eval snmp_get [::snmp::cmdopt] -Oqvx -IJ  $::snmp::agentip  $oid } ret] {
+		log_result "*************Err: $ret \n"	
+	} else {
+		set hexdata [join [split [lindex $ret 0] " \n\""] ""]
+		set dumpfile [tk_getSaveFile -initialdir $confPath/dumpfile]
+		if {$dumpfile!=""} {
+			set fd [open $dumpfile w] 
+			fconfigure $fd -translation binary			
+			puts -nonewline $fd [binary format H* $hexdata]
+			close $fd
+		}
+		log_result "Dump data to $dumpfile\n"
+		
+	}
+	log_result "==== Finish ====\n"
+}
+
+proc snmpset_cmd {oid} {
+	global RESULT
+	if {$::result_clear} {$RESULT delete 1.0 end}
+	set ::snmp::cmd "snmp_set [::snmp::cmdopt w] [::snmp::outfmt] $::snmp::agentip  $oid $::snmp::TYPE $::snmp::setvalue"
+	log_result "\n==== Start ====\n"
+	if [catch {eval snmp_set [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $oid $::snmp::TYPE $::snmp::setvalue } ret] {
+		log_result "Err: $ret \n"	
+	} else {
+		log_result "[lindex $ret 0]\n"
+	}
+	log_result "==== Finish ====\n"
+	
+}
+
+proc snmpset_gui {} {
+	global TREE
+    foreach {ret index_list} [get_index] {}
+	set oid_list ""
+	if {!$ret} {
+    	#
+    } else {
+    	foreach ind $index_list {
+    		lappend oid_list "[set ::snmp::OID].$ind"
+    	}
+    }
+	catch {destroy .snmpset}
+	set w [toplevel .snmpset]
+	wm title $w "Snmpset"
+	wm resizable $w 0 0 
+	wm transient $w [winfo toplevel [winfo parent $w]]
+	
+	
+	ttk::labelframe $w.lf1 -text "Remote SNMP agent"
+	ttk::entry $w.lf1.en -textvariable ::snmp::agentip
+	ttk::button $w.lf1.bt_conf -text "SNMP Setting" -command snmp_protocol
+#	ttk::button $w.lf1.bt2_conf
+	
+	ttk::labelframe $w.lf2 -text "OID to Set"
+	ttk::combobox $w.lf2.cb -textvariable ::snmp::OID -values $oid_list
+	ttk::button $w.lf2.bt_conf
+	.snmpset.lf2.cb curren 0
+	ttk::labelframe $w.lf3 -text "Value to Set"
+	ttk::entry $w.lf3.en -textvariable ::snmp::setvalue
+	ttk::button $w.lf3.bt_conf -text "Get" -command {
+		#puts [$w.lf2.cb get]
+		#puts w=$w
+		set oid [.snmpset.lf2.cb get]
+		set ::snmp::setvalue [lindex [eval snmp_get [::snmp::cmdopt]  -OqvU -IJ $::snmp::agentip  $oid] 0]
+	}
+	ttk::button $w.lf3.bt2_conf -text "Set" -command {
+		snmpset_cmd $oid
+	}
+	
+	ttk::separator $w.sep -orient horizontal  
+	
+	ttk::labelframe $w.lf4 -text "Syntax"
+	ttk::radiobutton $w.lf4.rb1 -text "INTEGER" -variable ::snmp::TYPE -value i
+	ttk::radiobutton $w.lf4.rb2 -text "UINTEGER" -variable ::snmp::TYPE -value u
+	ttk::radiobutton $w.lf4.rb3 -text "TIMETICKS" -variable ::snmp::TYPE -value t
+	ttk::radiobutton $w.lf4.rb4 -text "IPADDRESS" -variable ::snmp::TYPE -value a
+	ttk::radiobutton $w.lf4.rb5 -text "OBJID" -variable ::snmp::TYPE -value o
+	ttk::radiobutton $w.lf4.rb6 -text "STRING" -variable ::snmp::TYPE -value s
+	ttk::radiobutton $w.lf4.rb7 -text "HEX STRING" -variable ::snmp::TYPE -value x
+	ttk::radiobutton $w.lf4.rb8 -text "DEC STRING" -variable ::snmp::TYPE -value d
+	ttk::radiobutton $w.lf4.rb9 -text "BITS" -variable ::snmp::TYPE -value b
+	# ttk::radiobutton $w.lf4.rb3 -text "INTEGER64" -variable snmp_TYPE -value I
+	# ttk::radiobutton $w.lf4.rb3 -text "UINTEGER64" -variable snmp_TYPE -value U
+	# ttk::radiobutton $w.lf4.rb3 -text "float" -variable snmp_TYPE -value F
+	# ttk::radiobutton $w.lf4.rb3 -text "double" -variable snmp_TYPE -value D
+
+	# TYPE: one of i, u, t, a, o, s, x, d, b
+	# i: INTEGER, u: unsigned INTEGER, t: TIMETICKS, a: IPADDRESS
+	# o: OBJID, s: STRING, x: HEX STRING, d: DECIMAL STRING, b: BITS
+	# U: unsigned int64, I: signed int64, F: float, D: double
+	   
+	grid $w.lf1 -sticky we -padx 5
+	grid $w.lf1.en      -row 0 -column 0 -padx 2 -sticky we
+	grid $w.lf1.bt_conf -row 0 -column 1 -padx 2 -sticky w
+#$w.lf1.bt_conf $w.lf1.bt2_conf -sticky we -padx 5
+	grid columnconfig $w.lf1 0 -weight 1
+	
+	
+	grid $w.lf2 -sticky we -padx 5
+	grid $w.lf2.cb $w.lf2.bt_conf -sticky we -padx 5
+	grid columnconfig $w.lf2 0 -weight 1
+	
+	grid $w.lf3 -sticky we -padx 5
+	grid $w.lf3.en $w.lf3.bt_conf $w.lf3.bt2_conf -sticky we -padx 5
+	grid columnconfig $w.lf3 0 -weight 1
+	grid $w.sep -sticky we
+	
+	grid $w.lf4 -sticky we -padx 5
+	grid $w.lf4.rb1 $w.lf4.rb2 $w.lf4.rb3 -sticky w -padx 5 -pady 5
+	grid $w.lf4.rb4 $w.lf4.rb5 $w.lf4.rb6 -sticky w -padx 5 -pady 5
+	grid $w.lf4.rb7 $w.lf4.rb8 $w.lf4.rb9 -sticky w -padx 5 -pady 5
+	
+	::tk::PlaceWindow $w 
+	grab $w
+
+}
+
 proc ::snmp::snmpdump {} {
 	snmpget_gui dump
 }
@@ -711,11 +709,23 @@ proc ::snmp::snmpwalk {} {
 	global RESULT
 	if {$::result_clear} {$RESULT delete 1.0 end}
 	set ::snmp::cmd "snmp_walk [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID"
-	set ret [eval snmp_walk [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID]
-	foreach val $ret {
-		log_result "$val\n"	
+	log_result "\n==== Start ====\n"
+	if [catch {eval snmp_walk [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID} ret] {
+		log_result "err $ret\n" err
+	} else {
+		set item 1	
+		foreach val $ret {
+			log_result "$item.  $val\n"
+			incr item
+		}
 	}
-	log_result "============================================================================\n"
+	#set ret [eval snmp_walk [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID]
+	#set item 1	
+	#foreach val $ret {
+	#	log_result "$item.  $val\n"
+	#	incr item
+	#}
+	log_result "==== Finish ====\n"
 }
 
 proc ::snmp::snmpset {} {
@@ -729,9 +739,10 @@ proc ::snmp::snmpget {} {
 proc ::snmp::snmpgetnext {} {
 	global RESULT
 	if {$::result_clear} {$RESULT delete 1.0 end}
+	log_result "\n==== Start ====\n"
 	set ::snmp::cmd "snmp_getnext [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID"
 	log_result "[lindex [eval snmp_getnext [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID] 0]\n"
-	log_result "============================================================================\n"
+	log_result "==== Finish ====\n"
 }
 
 proc ::snmp::outfmt {} {
@@ -762,7 +773,6 @@ proc ::snmp::cmdopt {{rw r}} {
 		log_result "Agent key is $agentkey\n"
 		set sk [calc_sharekey $agentkey $::snmp::DHKey]
 		log_result "Share key is $sk\n"
-		#puts sk=$sk
 		
 		set auth_salt \x98\xdf\xb5\xac
 		set priv_salt \xd1\x31\x0b\xa6
@@ -771,8 +781,6 @@ proc ::snmp::cmdopt {{rw r}} {
 		set ::snmp::DHpriv_key [::pbkdf2::pbkdf2 $sk $priv_salt 500 16]		
 		log_result "auth_key=$::snmp::DHauth_key\n"
 		log_result "priv_key=$::snmp::DHpriv_key\n\n"
-		#puts auth_key=$::snmp::DHauth_key
-		#puts priv_key=$::snmp::DHpriv_key
 		set ::snmp::DHInit 1	
 	}
 	
@@ -803,9 +811,7 @@ proc ::snmp::cmdopt {{rw r}} {
 			}
 		}
 	}
-	return "$opt -l$::snmp::level"
-	
-
+	return "$opt -l$::snmp::level"	
 }
 
 
@@ -850,4 +856,125 @@ proc get_agent_key {cm_ip usm} {
 }
 
 
+proc search_result {} {
+	global RESULT
+	if {![info exist ::prev_search]} {
+		set ::prev_search ""
+	}
+	# only re-search when patten change
+	if {$::prev_search != $::searchresult} {
+		$RESULT tag delete match
+		$RESULT tag delete mark
+		set ::matchlist ""
+		#set ::matchmark 1.0
+		if { $::res_direction == "down" } {
+			set ::matchmark 1.0
+		} else {
+			set ::matchmark [$RESULT index end]
+		}
+		set ind 1.0
+		set ::prev_search $::searchresult
+		if {$::searchresult==""} {			
+			return
+		}
+		while { [set ret [$RESULT search $::searchresult $ind end]] != ""} {
+			puts ret=$ret
+			lappend ::matchlist $ret
+			set ind $ret+[string length $::searchresult]chars
+			set ret [$RESULT search $::searchresult $ind end]
+		
+		}
+
+		$RESULT tag configure match -background yellow
+		foreach match $::matchlist {
+			$RESULT tag add match $match $match+[string length $::searchresult]c
+		}
+	}
+	if { $::res_direction == "down" } {
+		mark_next
+	} else {
+		mark_prev
+	}
+	
+}
+
+proc mark_next {} {
+	global RESULT
+	if { ![info exist ::matchlist] } {return}
+	set match ""
+	set leng [string length $::searchresult]
+	set breaked 0
+	foreach match $::matchlist {
+		set temp [$RESULT index $::matchmark+[set leng]c]
+		if { ( [index_compare $match $temp ] == "gt") || ( [index_compare $match $temp ] == "eq") } {
+				set ::matchmark [$RESULT index $match]
+				set breaked 1
+				break
+			}
+	}
+	if { ($breaked==0) && ($match != "") } {
+		set match [lindex $::matchlist 0]
+		set ::matchmark [$RESULT index $match]
+	}
+
+	if {$match != ""} {
+		catch {$RESULT tag delete mark}
+		$RESULT tag configure mark -background orange
+		$RESULT tag raise mark
+		$RESULT tag add mark $match $match+[string length $::searchresult]c
+		$RESULT see mark.first
+	}	
+}
+
+
+proc mark_prev {} {
+	global RESULT
+	if { ![info exist ::matchlist] } {return}
+	set match ""
+	set ind 0
+	set breaked 0
+
+	foreach match $::matchlist {	
+		if { [index_compare $match $::matchmark] == "eq" } {
+			if {$ind==0} {
+				set match [lindex $::matchlist end]
+			} else {			
+				set match [lindex $::matchlist [expr $ind-1]]
+			}
+			set ::matchmark [$RESULT index $match]
+			set breaked 1
+			break
+		}
+		incr ind
+	}
+
+	if { ($breaked==0) && ($match != "") } {
+		set match [lindex $::matchlist end]
+		set ::matchmark [$RESULT index $match]
+	}
+	
+	if {$match != ""} {
+		catch {$RESULT tag delete mark}
+		$RESULT tag configure mark -background orange
+		$RESULT tag raise mark
+		$RESULT tag add mark $match $match+[string length $::searchresult]c
+		$RESULT see mark.first
+	}	
+}
+
+proc index_compare {index_a index_b} {
+	foreach {a_line a_char} [split $index_a .] {}
+	foreach {b_line b_char} [split $index_b .] {}
+	if {[string eq $index_a  $index_b]} {return "eq"}
+	if {$a_line > $b_line} { return "gt"}
+	if {$a_line == $b_line} {
+		if {$a_char > $b_char} {
+			return "gt"
+		} else {
+			return "lt"
+		}
+	} else {
+		return "lt"
+	}	
+}
 
