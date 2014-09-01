@@ -184,11 +184,11 @@ $TREE notify bind $TREE <Selection> {
 		
 		if {$::show_mib_info} {
 			if [regexp {^\d} $oid] {
-				$MIBINFO configure -state normal	
+				#$MIBINFO configure -state normal	
 				$MIBINFO delete 1.0 end 
 				$MIBINFO insert end "oid $oid\n"
 				$MIBINFO insert end [string range [snmp_translate -Td $oid] 1 end-1]
-				$MIBINFO configure -state disable
+				#$MIBINFO configure -state disable
 			}
 		}
 		set ::snmp::NAME $name

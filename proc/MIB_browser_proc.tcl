@@ -856,125 +856,79 @@ proc get_agent_key {cm_ip usm} {
 }
 
 
+# highlight all matched result
+
 proc search_result {} {
 	global RESULT
-	if {![info exist ::prev_search]} {
-		set ::prev_search ""
-	}
+	#if {![info exist ::prev_search]} {
+	#	set ::prev_search ""
+	#}
 	# only re-search when patten change
-	if {$::prev_search != $::searchresult} {
-		$RESULT tag delete match
-		$RESULT tag delete mark
-		set ::matchlist ""
-		#set ::matchmark 1.0
-		if { $::res_direction == "down" } {
-			set ::matchmark 1.0
-		} else {
-			set ::matchmark [$RESULT index end]
-		}
-		set ind 1.0
-		set ::prev_search $::searchresult
-		if {$::searchresult==""} {			
-			return
-		}
-		while { [set ret [$RESULT search $::searchresult $ind end]] != ""} {
-			puts ret=$ret
-			lappend ::matchlist $ret
-			set ind $ret+[string length $::searchresult]chars
-			set ret [$RESULT search $::searchresult $ind end]
-		
-		}
-
-		$RESULT tag configure match -background yellow
-		foreach match $::matchlist {
-			$RESULT tag add match $match $match+[string length $::searchresult]c
-		}
-	}
+	
+	#if {$::prev_search != $::searchresult} {}
+	
+	$RESULT tag remove match 1.0 end
+	$RESULT tag remove mark  1.0 end
+	set ::matchlist ""
+	#set ::matchmark 1.0
 	if { $::res_direction == "down" } {
-		mark_next
+		set ::matchmark 1.0
 	} else {
-		mark_prev
+		set ::matchmark [$RESULT index end]
+	}
+	set ind 1.0
+	set ::prev_search $::searchresult
+	if {$::searchresult==""} {			
+		return
+	}
+	while { [set ret [$RESULT search $::searchresult $ind end]] != ""} {
+		lappend ::matchlist $ret
+		set ind $ret+[string length $::searchresult]chars
+		set ret [$RESULT search $::searchresult $ind end]
+
+	}
+	foreach match $::matchlist {
+		$RESULT tag add match $match $match+[string length $::searchresult]c
 	}
 	
+	if { $::res_direction == "down" } {
+		set ::match_mark 0.0
+	} else {
+		set ::match_mark end
+	}		
 }
+
+
 
 proc mark_next {} {
 	global RESULT
-	if { ![info exist ::matchlist] } {return}
-	set match ""
-	set leng [string length $::searchresult]
-	set breaked 0
-	foreach match $::matchlist {
-		set temp [$RESULT index $::matchmark+[set leng]c]
-		if { ( [index_compare $match $temp ] == "gt") || ( [index_compare $match $temp ] == "eq") } {
-				set ::matchmark [$RESULT index $match]
-				set breaked 1
-				break
-			}
-	}
-	if { ($breaked==0) && ($match != "") } {
-		set match [lindex $::matchlist 0]
-		set ::matchmark [$RESULT index $match]
-	}
-
+	
+	if {$::searchresult==""} {return}
+	set have_match [$RESULT search $::searchresult 0.0 end]
+	set match [$RESULT search $::searchresult $::match_mark+[string length $::searchresult]c end]
+	if { $match=="" && ([llength $have_match] > 0) } {set match [lindex $have_match 0]}
 	if {$match != ""} {
-		catch {$RESULT tag delete mark}
-		$RESULT tag configure mark -background orange
-		$RESULT tag raise mark
+		$RESULT tag remove mark 1.0 end
 		$RESULT tag add mark $match $match+[string length $::searchresult]c
 		$RESULT see mark.first
+		set ::match_mark $match
 	}	
 }
 
 
 proc mark_prev {} {
 	global RESULT
-	if { ![info exist ::matchlist] } {return}
-	set match ""
-	set ind 0
-	set breaked 0
 
-	foreach match $::matchlist {	
-		if { [index_compare $match $::matchmark] == "eq" } {
-			if {$ind==0} {
-				set match [lindex $::matchlist end]
-			} else {			
-				set match [lindex $::matchlist [expr $ind-1]]
-			}
-			set ::matchmark [$RESULT index $match]
-			set breaked 1
-			break
-		}
-		incr ind
-	}
-
-	if { ($breaked==0) && ($match != "") } {
-		set match [lindex $::matchlist end]
-		set ::matchmark [$RESULT index $match]
-	}
-	
+	if {$::searchresult==""} {return}
+	set have_match [$RESULT search -backwards $::searchresult end 0.0]
+	set match [$RESULT search -backwards $::searchresult $::match_mark 0.0]
+	if { $match=="" && ([llength $have_match] > 0) } {set match [lindex $have_match 0]}
 	if {$match != ""} {
-		catch {$RESULT tag delete mark}
-		$RESULT tag configure mark -background orange
-		$RESULT tag raise mark
+		$RESULT tag remove mark 1.0 end
 		$RESULT tag add mark $match $match+[string length $::searchresult]c
 		$RESULT see mark.first
+		set ::match_mark $match
 	}	
 }
 
-proc index_compare {index_a index_b} {
-	foreach {a_line a_char} [split $index_a .] {}
-	foreach {b_line b_char} [split $index_b .] {}
-	if {[string eq $index_a  $index_b]} {return "eq"}
-	if {$a_line > $b_line} { return "gt"}
-	if {$a_line == $b_line} {
-		if {$a_char > $b_char} {
-			return "gt"
-		} else {
-			return "lt"
-		}
-	} else {
-		return "lt"
-	}	
-}
 

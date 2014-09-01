@@ -341,7 +341,7 @@ grid rowconfigure $LF_RESULT 0 -weight 1
 grid columnconfigure $LF_RESULT 0 -weight 1
 
 
-set MIBINFO [text $LF_MIBINFO.text -wrap none  -font $::info_font -height 8 -state disabled]
+set MIBINFO [text $LF_MIBINFO.text -wrap none  -font $::info_font -height 8]
 set SH_MIBINFO [::ttk::scrollbar $LF_MIBINFO.sh -orient horizontal -command [list $MIBINFO xview]]
 set SV_MIBINFO [::ttk::scrollbar $LF_MIBINFO.sv -orient vertical   -command [list $MIBINFO yview]]
 $MIBINFO configure -yscrollcommand [list $SV_MIBINFO set]
@@ -351,32 +351,59 @@ $MIBINFO configure -xscrollcommand [list $SH_MIBINFO set]
 set ::searchresult ""
 set ::res_direction  down
 ttk::entry       $LF_SEARCH2.en_search -textvariable ::searchresult
+set ::searchresult_buf ""
 #-validate key -validatecommand "check_search_input %S"
 
 ttk::radiobutton $LF_SEARCH2.rb_up   -text "Up"   -value up   -variable ::res_direction 
 ttk::radiobutton $LF_SEARCH2.rb_down -text "Down" -value down -variable ::res_direction
-ttk::button      $LF_SEARCH2.bt_search -text "Go" -command {search_result}
+#ttk::button      $LF_SEARCH2.bt_search -text "Go" -command {search_result}
 grid $LF_SEARCH2.en_search -row 0 -column 0 -sticky we -padx 5
 grid $LF_SEARCH2.rb_up     -row 0 -column 1 -sticky we -padx 5
 grid $LF_SEARCH2.rb_down   -row 0 -column 2 -sticky we -padx 5
-grid $LF_SEARCH2.bt_search -row 0 -column 3 -sticky we -padx 5
+#grid $LF_SEARCH2.bt_search -row 0 -column 3 -sticky we -padx 5
 
+set ::match_mark 0.0
 bind $LF_SEARCH2.en_search <Return> {
-	search_result
+	#search_result
+	if { $::res_direction == "down" } {
+		mark_next
+	} else {
+		mark_prev
+	}
 }
 
-bind $LF_SEARCH2.en_search <KP_Enter> {
-	search_result
+bind $LF_SEARCH2.en_search <KP_Enter> {	
+	#search_result
+	if { $::res_direction == "down" } {
+		mark_next
+	} else {
+		mark_prev
+	}
 }
+
+bind $LF_SEARCH2.en_search <KeyRelease> {
+	if {![string eq $::searchresult_buf $::searchresult]} {
+		set ::searchresult_buf $::searchresult
+		search_result
+		if { $::res_direction == "down" } {
+			mark_next
+		} else {
+			mark_prev
+		}
+	}		
+}
+
 
 bind $LF_SEARCH2.en_search <Prior> {
 	set ::res_direction  up
-	search_result
+	#search_result
+	mark_prev
 }
 
 bind $LF_SEARCH2.en_search <Next> {
 	set ::res_direction down
-	search_result
+	#search_result
+	mark_next
 }
 
 grid $MIBINFO $SV_MIBINFO -sticky "news"
@@ -406,4 +433,22 @@ focus $TREE
 
 
 $RESULT tag configure err -foreground red
+$RESULT tag configure match -background yellow
+$RESULT tag configure mark -background orange
+$RESULT tag raise mark match
+
+bind $RESULT  <KeyPress> break
+bind $MIBINFO <KeyPress> break
+
+bind $MIBINFO <Control-c> {
+}
+
+bind $RESULT <Control-c> {
+	foreach {tagon tag ind1 tagoff tag2 ind2} [$RESULT dump -tag 1.0 end] {
+		if {$tag=="sel"} {
+			clipboard clear
+            clipboard append -- [$RESULT get $ind1 $ind2]
+		}
+	}	
+}
 
