@@ -509,7 +509,7 @@ proc change_tree_dsp {} {
 }
 
 
-proc snmpget_gui {{method normal}} {
+proc snmpget_gui {{method get}} {
 
 	foreach {ret index_list} [get_index] {}
 	if {!$ret} {
@@ -519,28 +519,61 @@ proc snmpget_gui {{method normal}} {
 	}
 	
 	if { [llength $index_list] == 1} {
-		if {$method=="dump"} {
-			set get_oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
-			snmpdump_cmd $get_oid
-			return
-		} else {
-			set get_oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
-			snmpget_cmd $get_oid
-			return
+		switch $method {
+			"dump" {
+				set get_oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
+				snmpdump_cmd $get_oid
+				return
+			}
+			"upload" {
+				set set_oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
+				snmpupload_cmd $set_oid
+				return
+			}
+			"get" {
+				set get_oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
+				snmpget_cmd $get_oid
+				return	
+			}
 		}
+		#if {$method=="dump"} {
+		#	set get_oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
+		#	snmpdump_cmd $get_oid
+		#	return
+		#} else {
+		#	set get_oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
+		#	snmpget_cmd $get_oid
+		#	return
+		#}
 	}		
-	
+	if {[llength $index_list]==0} {
+		return
+	}
+	puts index_list=$index_list
 	catch {destroy .snmpget}
 	set p [toplevel .snmpget]
 	wm title $p "Select index"
 	wm resizable $p 0 0 
 	wm transient $p [winfo toplevel [winfo parent $p]]
 	ttk::combobox .snmpget.cb -value $index_list
-	if {$method=="dump"} {
-		ttk::button   .snmpget.bt -text "Get" -command {snmpdump_cmd $::snmp::OID.[.snmpget.cb get]}
-	} else {
-		ttk::button   .snmpget.bt -text "Get" -command {snmpget_cmd $::snmp::OID.[.snmpget.cb get]}	
-	}	
+
+	switch $method {
+		"dump" {
+			ttk::button   .snmpget.bt -text "Dump"   -command {snmpdump_cmd $::snmp::OID.[.snmpget.cb get]}
+		}
+		"get" {
+			ttk::button   .snmpget.bt -text "Get"    -command {snmpget_cmd $::snmp::OID.[.snmpget.cb get]}		
+		}
+		"upload" {
+
+			ttk::button   .snmpget.bt -text "Upload" -command {snmpupload_cmd $::snmp::OID.[.snmpget.cb get]}		
+		}
+	}
+	#if {$method=="dump"} {
+	#	ttk::button   .snmpget.bt -text "Get" -command {snmpdump_cmd $::snmp::OID.[.snmpget.cb get]}
+	#} else {
+	#	ttk::button   .snmpget.bt -text "Get" -command {snmpget_cmd $::snmp::OID.[.snmpget.cb get]}	
+	#}	
 
 	.snmpget.cb current 0	
 	grid .snmpget.cb -row 0 -column 0 -sticky we -padx 5 -pady 5
@@ -552,14 +585,14 @@ proc snmpget_gui {{method normal}} {
 
 proc get_index {} {
 	if [catch {eval snmp_walk [::snmp::cmdopt] -OQnb $::snmp::agentip  $::snmp::OID} ret] {
-	#puts ========ret=$ret
 		return 0
 	} else {
 		set index_list ""
 		foreach vbind $ret {
 			set retoid [string trim [lindex [split $vbind =] 0]]
-			regexp "[set ::snmp::OID]\.(.+)" [string trimleft $retoid .] match index
-			lappend index_list $index
+			if [regexp "[set ::snmp::OID]\.(.+)" [string trimleft $retoid .] match index] {
+				lappend index_list $index
+			}
 		}
 		return [list 1	$index_list]
 	}
@@ -596,6 +629,26 @@ proc snmpdump_cmd {oid} {
 		}
 		log_result "Dump data to $dumpfile\n"
 		
+	}
+	log_result "==== Finish ====\n"
+}
+
+
+proc snmpupload_cmd {oid} {
+	global RESULT confPath
+	if {$::result_clear} {$RESULT delete 1.0 end}
+
+	log_result "\n==== Start ====\n"
+	set loadfd [tk_getOpenFile -initialdir $confPath/dumpfile]
+	if {$loadfd==""} {return}
+	set fd [open $loadfd r]
+	fconfigure $fd -translation binary
+	binary scan [read $fd] H* hexdata
+	
+	if [catch {eval snmp_set [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $oid x $hexdata} ret] {
+		log_result "*************Err: $ret \n"	
+	} else {
+		log_result "Upload $loadfd\n"		
 	}
 	log_result "==== Finish ====\n"
 }
@@ -708,6 +761,15 @@ proc ::snmp::snmpdump {} {
 	snmpget_gui dump
 }
 
+proc ::snmp::snmpupload {} {
+	global RESULT
+	$RESULT tag remove match 1.0 end
+	$RESULT tag remove mark  1.0 end
+	snmpget_gui upload
+}
+
+
+
 proc ::snmp::snmpwalk {} {
 	global RESULT
 	$RESULT tag remove match 1.0 end
@@ -715,6 +777,7 @@ proc ::snmp::snmpwalk {} {
 	if {$::result_clear} {$RESULT delete 1.0 end}
 	set ::snmp::cmd "snmp_walk [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID"
 	log_result "\n==== Start ====\n"
+	update
 	if [catch {eval snmp_walk [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID} ret] {
 		log_result "err $ret\n" err
 	} else {
@@ -948,5 +1011,15 @@ proc mark_prev {} {
 
 proc showtime {} {
 	return [clock format [clock seconds] -format %y%m%d-%H%M%S]
+}
+
+proc save_result {} {
+	global RESULT confPath
+	set save_path [tk_getSaveFile -initialdir $confPath -initialfile result-[showtime].log]
+	if {$save_path != ""} {
+		set fd [open $save_path w]
+		puts -nonewline $fd [$RESULT get 1.0 end]
+		close $fd
+	}
 }
 

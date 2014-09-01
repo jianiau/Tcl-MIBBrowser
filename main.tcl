@@ -165,7 +165,14 @@ menu .mbar.view -tearoff 0
 menu .mbar.result -tearoff 0
 .mbar.result add checkbutton -label "Auto clear" -variable ::result_clear
 .mbar.result add command -label "Clear" -command {$RESULT delete 1.0 end}
-
+.mbar.result add separator
+.mbar.result add command -label "Select all" -command {
+	$RESULT tag remove sel 1.0 end
+	$RESULT tag add sel 1.0 end
+}
+.mbar.result add command -label "Copy" -command {tk_textCopy $RESULT}
+.mbar.result add separator
+.mbar.result add command -label "Save" -command {save_result}
 
 .mbar add cascade -label "Help"
 . configure -menu .mbar

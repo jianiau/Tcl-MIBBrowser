@@ -18,15 +18,7 @@ bind $RESULT <ButtonRelease-3> {
 	}
 	$M add command -label "Copy" -command {tk_textCopy $RESULT}
 	$M add separator
-	$M add command -label "Save" -command {
-		set save_path [tk_getSaveFile -initialdir $confPath -initialfile result-[showtime].log]
-		if {$save_path != ""} {
-			set fd [open $save_path w]
-			puts -nonewline $fd [$RESULT get 1.0 end]
-			close $fd
-		}
-		
-	}
+	$M add command -label "Save" -command {save_result}
 	tk_popup $RESULT.m %X %Y
 }
 
@@ -74,7 +66,7 @@ bind $TREE <ButtonRelease-3> {
 	}
 	
 	if {($::snmp::ACCESS==19)||($::snmp::ACCESS==20)||($::snmp::ACCESS==48)||$::TREE_DBG} {
-		$TREE.m add command -label "upload file" -command {}
+		$TREE.m add command -label "upload file" -command {::snmp::snmpupload}
 	} else {
 		$TREE.m add command -label "upload file" -command {} -state disable
 	}
