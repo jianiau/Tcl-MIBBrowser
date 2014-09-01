@@ -510,14 +510,16 @@ proc change_tree_dsp {} {
 
 
 proc snmpget_gui {{method get}} {
+	global RESULT
 
 	foreach {ret index_list} [get_index] {}
 	if {!$ret} {
-		log_result "err: get index fail\n"
-		log_result "============================================================================\n"
+		if {$::result_clear} {$RESULT delete 1.0 end}
+		log_result "Error: get index fail\n" err
+		log_result "[string trim $index_list]\n" err
 		return
 	}
-	
+
 	if { [llength $index_list] == 1} {
 		switch $method {
 			"dump" {
@@ -531,25 +533,17 @@ proc snmpget_gui {{method get}} {
 				return
 			}
 			"get" {
+
 				set get_oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
 				snmpget_cmd $get_oid
 				return	
 			}
 		}
-		#if {$method=="dump"} {
-		#	set get_oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
-		#	snmpdump_cmd $get_oid
-		#	return
-		#} else {
-		#	set get_oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
-		#	snmpget_cmd $get_oid
-		#	return
-		#}
-	}		
+	}
+	
 	if {[llength $index_list]==0} {
 		return
 	}
-	puts index_list=$index_list
 	catch {destroy .snmpget}
 	set p [toplevel .snmpget]
 	wm title $p "Select index"
@@ -559,21 +553,16 @@ proc snmpget_gui {{method get}} {
 
 	switch $method {
 		"dump" {
-			ttk::button   .snmpget.bt -text "Dump"   -command {snmpdump_cmd $::snmp::OID.[.snmpget.cb get]}
+			ttk::button   .snmpget.bt -text "Dump"   -command {snmpdump_cmd $::snmp::OID.[.snmpget.cb get] ; destroy .snmpget}
 		}
 		"get" {
-			ttk::button   .snmpget.bt -text "Get"    -command {snmpget_cmd $::snmp::OID.[.snmpget.cb get]}		
+			ttk::button   .snmpget.bt -text "Get"    -command {snmpget_cmd $::snmp::OID.[.snmpget.cb get]; destroy .snmpget}
 		}
 		"upload" {
 
-			ttk::button   .snmpget.bt -text "Upload" -command {snmpupload_cmd $::snmp::OID.[.snmpget.cb get]}		
+			ttk::button   .snmpget.bt -text "Upload" -command {snmpupload_cmd $::snmp::OID.[.snmpget.cb get]; destroy .snmpget}
 		}
 	}
-	#if {$method=="dump"} {
-	#	ttk::button   .snmpget.bt -text "Get" -command {snmpdump_cmd $::snmp::OID.[.snmpget.cb get]}
-	#} else {
-	#	ttk::button   .snmpget.bt -text "Get" -command {snmpget_cmd $::snmp::OID.[.snmpget.cb get]}	
-	#}	
 
 	.snmpget.cb current 0	
 	grid .snmpget.cb -row 0 -column 0 -sticky we -padx 5 -pady 5
@@ -585,7 +574,7 @@ proc snmpget_gui {{method get}} {
 
 proc get_index {} {
 	if [catch {eval snmp_walk [::snmp::cmdopt] -OQnb $::snmp::agentip  $::snmp::OID} ret] {
-		return 0
+		return [list 0 $ret]
 	} else {
 		set index_list ""
 		foreach vbind $ret {
@@ -659,20 +648,24 @@ proc snmpset_cmd {oid} {
 	set ::snmp::cmd "snmp_set [::snmp::cmdopt w] [::snmp::outfmt] $::snmp::agentip  $oid $::snmp::TYPE $::snmp::setvalue"
 	log_result "\n==== Start ====\n"
 	if [catch {eval snmp_set [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $oid $::snmp::TYPE $::snmp::setvalue } ret] {
-		log_result "Err: $ret \n"	
+		log_result "Error: [string trim $ret]\n" err
 	} else {
-		log_result "[lindex $ret 0]\n"
+		log_result "1.  [lindex $ret 0]\n"
 	}
 	log_result "==== Finish ====\n"
 	
 }
 
 proc snmpset_gui {} {
-	global TREE
+	global RESULT
+
     foreach {ret index_list} [get_index] {}
 	set oid_list ""
 	if {!$ret} {
-    	#
+    	if {$::result_clear} {$RESULT delete 1.0 end}
+		log_result "Error: get index fail\n" err
+		log_result "[string trim $index_list]\n" err
+		return
     } else {
     	foreach ind $index_list {
     		lappend oid_list "[set ::snmp::OID].$ind"
@@ -680,22 +673,24 @@ proc snmpset_gui {} {
     }
 	catch {destroy .snmpset}
 	set w [toplevel .snmpset]
+	set ::temp(backupOID) $::snmp::OID
 	wm title $w "Snmpset"
 	wm resizable $w 0 0 
-	wm transient $w [winfo toplevel [winfo parent $w]]
-	
-	
+	wm transient $w [winfo toplevel [winfo parent $w]]	
+	wm protocol $w WM_DELETE_WINDOW {set ::snmp::OID $::temp(backupOID) ; destroy .snmpset}
 	ttk::labelframe $w.lf1 -text "Remote SNMP agent"
 	ttk::entry $w.lf1.en -textvariable ::snmp::agentip
 	ttk::button $w.lf1.bt_conf -text "SNMP Setting" -command snmp_protocol
 #	ttk::button $w.lf1.bt2_conf
 	
 	ttk::labelframe $w.lf2 -text "OID to Set"
+	
 	ttk::combobox $w.lf2.cb -textvariable ::snmp::OID -values $oid_list
 	ttk::button $w.lf2.bt_conf
 	.snmpset.lf2.cb curren 0
 	ttk::labelframe $w.lf3 -text "Value to Set"
 	ttk::entry $w.lf3.en -textvariable ::snmp::setvalue
+	set ::snmp::setvalue ""
 	ttk::button $w.lf3.bt_conf -text "Get" -command {
 		#puts [$w.lf2.cb get]
 		#puts w=$w
@@ -704,6 +699,8 @@ proc snmpset_gui {} {
 	}
 	ttk::button $w.lf3.bt2_conf -text "Set" -command {
 		snmpset_cmd $oid
+		set ::snmp::OID $::temp(backupOID)
+		destroy .snmpset
 	}
 	
 	ttk::separator $w.sep -orient horizontal  
@@ -779,7 +776,7 @@ proc ::snmp::snmpwalk {} {
 	log_result "\n==== Start ====\n"
 	update
 	if [catch {eval snmp_walk [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID} ret] {
-		log_result "err $ret\n" err
+		log_result "Error: [string trim $ret]\n" err
 	} else {
 		set item 1	
 		foreach val $ret {
@@ -787,12 +784,6 @@ proc ::snmp::snmpwalk {} {
 			incr item
 		}
 	}
-	#set ret [eval snmp_walk [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID]
-	#set item 1	
-	#foreach val $ret {
-	#	log_result "$item.  $val\n"
-	#	incr item
-	#}
 	log_result "==== Finish ====\n"
 }
 
@@ -815,9 +806,14 @@ proc ::snmp::snmpgetnext {} {
 	$RESULT tag remove match 1.0 end
 	$RESULT tag remove mark  1.0 end
 	if {$::result_clear} {$RESULT delete 1.0 end}
+	set ::snmp::cmd "snmp_getnext [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID"	
 	log_result "\n==== Start ====\n"
-	set ::snmp::cmd "snmp_getnext [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID"
-	log_result "[lindex [eval snmp_getnext [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID] 0]\n"
+	update
+	if [catch {eval snmp_getnext [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID} ret] {
+		log_result "Error: [string trim $ret]\n" err
+	} else {
+		log_result "1.  [lindex $ret 0]\n"
+	}	
 	log_result "==== Finish ====\n"
 }
 
