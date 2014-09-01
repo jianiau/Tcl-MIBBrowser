@@ -281,6 +281,7 @@ pack  $LF_AGENT.en_ip -side left -fill both -padx 5
 ttk::entry $LF_CMD.en_cmd -textvariable ::snmp::cmd 
 set ::snmp::cmd ""
 ttk::button $LF_CMD.bt_cmd -text "Run" -command {
+	if {$::result_clear} {$RESULT delete 1.0 end}
 	log_result "\n==== Start ====\n"
 	update
 	$RESULT tag remove match 1.0 end
