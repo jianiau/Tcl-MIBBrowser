@@ -173,50 +173,7 @@ proc tree_dbclick {posx posy} {
 #
 #}
 
-$TREE notify bind $TREE <Selection> {
-	if {%S!=""} {
-		set name [get_node_data %S name]
-		set oid [get_node_data %S oid]
-		set type [get_node_data %S type]
-		set access [get_node_data %S access]
 
-		#$STATUS_BAR.lb_oid configure -text "OID $oid"
-		
-		if {$::show_mib_info} {
-			if [regexp {^\d} $oid] {
-				#$MIBINFO configure -state normal	
-				$MIBINFO delete 1.0 end 
-				$MIBINFO insert end "oid $oid\n"
-				$MIBINFO insert end [string range [snmp_translate -Td $oid] 1 end-1]
-				#$MIBINFO configure -state disable
-			}
-		}
-		set ::snmp::NAME $name
-		set ::snmp::OID $oid
-		set ::snmp::ACCESS $access
-		set ::snmp::selection %S
-		#puts $type
-	
-		set ::snmp::TYPE $::snmp::type_table($type)
-		#puts $::snmp::TYPE
-		# log_result [get_node_data %S all]\n
-		# $TREE see %S 0 -center x
-	}
-}
-
-
-$TREE notify bind $TREE <Collapse-before>  {
-	if {[catch {set prev_node [get_node_data [$TREE selection get] oid]}]} {
-		set prev_node "."
-	}
-	set node [get_node_data %I oid]	
-	if {[regexp $node $prev_node]} {
-		goto_node %I
-	}
-}
-
-
-bind $TREE <Double-Button-1> {tree_dbclick %x %y}
 
 #define MIB_ACCESS_READONLY    18
 #define MIB_ACCESS_READWRITE   19
@@ -225,75 +182,7 @@ bind $TREE <Double-Button-1> {tree_dbclick %x %y}
 #define MIB_ACCESS_NOTIFY      67
 #define MIB_ACCESS_CREATE      48 (readcreate)
 
-bind $TREE <ButtonRelease-3> {
-puts ::snmp::ACCESS=$::snmp::ACCESS
-	catch {destroy $TREE.m}
-	menu $TREE.m -tearoff 0
-	$TREE.m add command -label "snmpwalk" -command {
-		::snmp::snmpwalk
-	} -font {"Arial" 11 {}}
-	$TREE.m add separator
-	if {($::snmp::ACCESS==18)||($::snmp::ACCESS==19)||($::snmp::ACCESS==48)} {
-		$TREE.m add command -label "snmpget" -command {::snmp::snmpget} -font {"Arial" 11 {}}
-	} else {
-		$TREE.m add command -label "snmpget" -state disable -font {"Arial" 11 {}}
-	}
-	
-	$TREE.m add command -label "snmpgetnext" -font {"Arial" 11 {}} -command {
-		::snmp::snmpgetnext
-	} -font {"Arial" 11 {}}
-	puts ::snmp::ACCESS=$::snmp::ACCESS
-	if {($::snmp::ACCESS==19)||($::snmp::ACCESS==20)||($::snmp::ACCESS==48)} {
-		$TREE.m add command -label "snmpset" -command {::snmp::snmpset} -font {"Arial" 11 {}}
-	} else {
-		$TREE.m add command -label "snmpset" -command {::snmp::snmpset} -state disable -font {"Arial" 11 {}}
-	}
-	
-	$TREE.m add separator
-	
-	if { ( ($::snmp::ACCESS==18) || ($::snmp::ACCESS==19) || ($::snmp::ACCESS==48)) && ($::snmp::TYPE=="s")} {
-		$TREE.m add command -label "dump OCTET" -command {::snmp::snmpdump} -font {"Arial" 11 {}}
-	} else {
-		$TREE.m add command -label "dump OCTET" -state disable -font {"Arial" 11 {}}
-	}
-	
-	tk_popup $TREE.m %X %Y
-}
 
-
-bind $TREE <bracketleft> {
-	set ::direction up
-	search_cmd
-}
-bind $TREE <bracketright> {
-	set ::direction down
-	search_cmd
-}
-
-bind $TREE <slash> {
-	focus $LF_SEARCH.en_search
-	$LF_SEARCH.en_search selection range 0 end
-}
-
-bind $TREE <Control-w> {
-	 ::snmp::snmpwalk
-}
-
-bind $TREE <Control-n> {
-	 ::snmp::snmpgetnext
-}
-
-bind $TREE <Control-g> {
-	if {($::snmp::ACCESS==18)||($::snmp::ACCESS==19)} {
-		::snmp::snmpget
-	}
-}
-
-bind $TREE <Control-s> {
-	if {($::snmp::ACCESS==19)||($::snmp::ACCESS==20)||($::snmp::ACCESS==48)} {
-		::snmp::snmpset
-	}
-}
 
 # bind $TREE <Enter> {
 	# catch {destroy $TREE.l}

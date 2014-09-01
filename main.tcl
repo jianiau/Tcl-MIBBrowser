@@ -276,6 +276,8 @@ set ::snmp::cmd ""
 ttk::button $LF_CMD.bt_cmd -text "Run" -command {
 	log_result "\n==== Start ====\n"
 	update
+	$RESULT tag remove match 1.0 end
+	$RESULT tag remove mark  1.0 end
 	if [catch {eval $::snmp::cmd} ret] {
 		log_result "err: $ret\n" err
 	} else {
@@ -415,6 +417,8 @@ grid columnconfig $LF_SEARCH2 0 -weight 1
 ## end Query tag
 
 #update
+source [file join $appPath proc binding_proc.tcl]
+
 
 set width  [expr int([winfo screenwidth  .]*0.8)]
 set height [expr int([winfo screenheight .]*0.8)]
@@ -437,18 +441,5 @@ $RESULT tag configure match -background yellow
 $RESULT tag configure mark -background orange
 $RESULT tag raise mark match
 
-bind $RESULT  <KeyPress> break
-bind $MIBINFO <KeyPress> break
 
-bind $MIBINFO <Control-c> {
-}
-
-bind $RESULT <Control-c> {
-	foreach {tagon tag ind1 tagoff tag2 ind2} [$RESULT dump -tag 1.0 end] {
-		if {$tag=="sel"} {
-			clipboard clear
-            clipboard append -- [$RESULT get $ind1 $ind2]
-		}
-	}	
-}
 

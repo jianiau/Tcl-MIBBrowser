@@ -702,11 +702,16 @@ proc snmpset_gui {} {
 }
 
 proc ::snmp::snmpdump {} {
+	global RESULT
+	$RESULT tag remove match 1.0 end
+	$RESULT tag remove mark  1.0 end
 	snmpget_gui dump
 }
 
 proc ::snmp::snmpwalk {} {
 	global RESULT
+	$RESULT tag remove match 1.0 end
+	$RESULT tag remove mark  1.0 end
 	if {$::result_clear} {$RESULT delete 1.0 end}
 	set ::snmp::cmd "snmp_walk [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID"
 	log_result "\n==== Start ====\n"
@@ -729,15 +734,23 @@ proc ::snmp::snmpwalk {} {
 }
 
 proc ::snmp::snmpset {} {
+	global RESULT
+	$RESULT tag remove match 1.0 end
+	$RESULT tag remove mark  1.0 end
 	snmpset_gui
 }
 
 proc ::snmp::snmpget {} {
-	snmpget_gui 
+	global RESULT
+	$RESULT tag remove match 1.0 end
+	$RESULT tag remove mark  1.0 end
+	snmpget_gui
 }
 
 proc ::snmp::snmpgetnext {} {
 	global RESULT
+	$RESULT tag remove match 1.0 end
+	$RESULT tag remove mark  1.0 end
 	if {$::result_clear} {$RESULT delete 1.0 end}
 	log_result "\n==== Start ====\n"
 	set ::snmp::cmd "snmp_getnext [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID"
@@ -931,4 +944,9 @@ proc mark_prev {} {
 	}	
 }
 
+
+
+proc showtime {} {
+	return [clock format [clock seconds] -format %y%m%d-%H%M%S]
+}
 
