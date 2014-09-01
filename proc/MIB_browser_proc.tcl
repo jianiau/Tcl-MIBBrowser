@@ -93,7 +93,8 @@ proc search_cmd {} {
 
 proc snmp_protocol {} {
 	catch {destroy .protocol}
-	set p [toplevel .protocol]	
+	set p [toplevel .protocol]
+	bind $p <Escape> {destroy .protocol}
 	array unset ::temp
 	foreach varname {ver comm_r comm_w timeout retry output useroutput} {
 		set ::temp($varname) [set ::snmp::$varname]
@@ -215,6 +216,7 @@ proc snmpv3_setup {} {
 	set ::snmp::DHInit 0
 	catch {destroy .protocol.snmpv3}
 	set p [toplevel .protocol.snmpv3]
+	bind $p <Escape> {destroy .protocol.snmpv3}
 	wm resizable $p 0 0 
 
 	wm title $p "snmpv3 Setting"
@@ -352,6 +354,7 @@ proc mib_setup {} {
 	}
 	set ::temp(changedir) 0
 	set p [toplevel .mib_setup]
+	bind $p <Escape> {destroy .mib_setup}
 	wm resizable $p 0 0 
 
 	wm title $p "MIB Setting"
@@ -424,6 +427,7 @@ proc font_setup {} {
 	global TREE MIBINFO RESULT
 	catch {destroy .font_setup}
 	set p [toplevel .font_setup]
+	bind $p <Escape> {destroy .font_setup}
 	wm resizable $p 0 0 
 
 	wm title $p "Font Setting"
@@ -546,10 +550,11 @@ proc snmpget_gui {{method get}} {
 	}
 	catch {destroy .snmpget}
 	set p [toplevel .snmpget]
+	bind $p <Escape> {destroy .snmpget}
 	wm title $p "Select index"
 	wm resizable $p 0 0 
 	wm transient $p [winfo toplevel [winfo parent $p]]
-	ttk::combobox .snmpget.cb -value $index_list
+	ttk::combobox .snmpget.cb -value $index_list -state readonly
 
 	switch $method {
 		"dump" {
@@ -656,9 +661,10 @@ proc snmpset_cmd {oid} {
 	
 }
 
-proc snmpset_gui {} {
+proc snmpset_gui {} {	
 	global RESULT
-
+	
+	set ::temp(backupOID) $::snmp::OID
     foreach {ret index_list} [get_index] {}
 	set oid_list ""
 	if {!$ret} {
@@ -673,7 +679,8 @@ proc snmpset_gui {} {
     }
 	catch {destroy .snmpset}
 	set w [toplevel .snmpset]
-	set ::temp(backupOID) $::snmp::OID
+	bind $w <Escape> {set ::snmp::OID $::temp(backupOID) ; destroy .snmpset}
+	
 	wm title $w "Snmpset"
 	wm resizable $w 0 0 
 	wm transient $w [winfo toplevel [winfo parent $w]]	
