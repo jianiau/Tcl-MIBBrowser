@@ -65,7 +65,7 @@ bind $TREE <ButtonRelease-3> {
 		$TREE.m add command -label "dump OCTET" -state disable
 	}
 	
-	if {($::snmp::ACCESS==19)||($::snmp::ACCESS==20)||($::snmp::ACCESS==48)||$::TREE_DBG} {
+	if { (($::snmp::ACCESS==19)||($::snmp::ACCESS==20)||($::snmp::ACCESS==48)) && ($::snmp::TYPE=="s")||$::TREE_DBG} {
 		$TREE.m add command -label "upload file" -command {::snmp::snmpupload}
 	} else {
 		$TREE.m add command -label "upload file" -command {} -state disable
@@ -123,14 +123,14 @@ $TREE notify bind $TREE <Collapse-before>  {
 bind $TREE <Double-Button-1> {tree_dbclick %x %y}
 
 
-bind $TREE <bracketleft> {
-	set ::direction up
-	goto_next_match
-}
-bind $TREE <bracketright> {
-	set ::direction down
-	goto_next_match
-}
+#bind $TREE <bracketleft> {
+#	set ::direction up
+#	goto_next_match
+#}
+#bind $TREE <bracketright> {
+#	set ::direction down
+#	goto_next_match
+#}
 
 bind $TREE <slash> {
 	focus $LF_SEARCH.en_search
@@ -208,6 +208,25 @@ bind $LF_SEARCH.en_search <Return> {
 	goto_next_match
 }
 
+bind $LF_SEARCH.en_search <Control-w> {
+	::snmp::snmpwalk
+}
+
+bind $LF_SEARCH.en_search <Control-n> {
+	 ::snmp::snmpgetnext
+}
+
+bind $LF_SEARCH.en_search <Control-g> {
+	if {($::snmp::ACCESS==18)||($::snmp::ACCESS==19)} {
+		::snmp::snmpget
+	}
+}
+
+bind $LF_SEARCH.en_search <Control-s> {
+	if {($::snmp::ACCESS==19)||($::snmp::ACCESS==20)||($::snmp::ACCESS==48)} {
+		::snmp::snmpset
+	}
+}
 
 
 
@@ -252,3 +271,32 @@ bind $LF_SEARCH2.en_search <Next> {
 	set ::res_direction down
 	mark_next
 }
+
+# bookmark
+set ::snmp::bookmark_list ""
+bind $TREE <m> {
+	if {[$TREE item element cget [$TREE selection get] $columnID elemText4 -text] == ""} {
+		$TREE item element configure [$TREE selection get] $columnID elemText4 -text "★"
+		lappend ::snmp::bookmark_list [$TREE selection get]
+		set ::snmp::bookmark_list [lsort -integer $::snmp::bookmark_list]
+		set ::BOOKMARK($::snmp::OID,state) 1
+		set ::BOOKMARK($::snmp::OID,name) $::snmp::NAME
+	} else {
+		$TREE item element configure [$TREE selection get] $columnID elemText4 -text ""
+		set ind [lsearch $::snmp::bookmark_list [$TREE selection get]]
+		set ::snmp::bookmark_list [lreplace $::snmp::bookmark_list $ind $ind]
+		set ::BOOKMARK($::snmp::OID,state) 0
+	}
+	puts ::snmp::bookmark_list=$::snmp::bookmark_list
+}
+
+bind $TREE <bracketleft> {
+	#set ::direction up	
+	goto_prev_bm
+}
+bind $TREE <bracketright> {
+	#set ::direction down
+	goto_next_bm
+}
+
+

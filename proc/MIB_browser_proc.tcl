@@ -393,6 +393,9 @@ proc mib_setup {} {
 		}
 		change_tree_dsp
 		if {$::temp(changedir)} {
+			save_bookmark
+			set ::snmp::bookmark_list ""
+			array unset ::BOOKMARK
 			catch {$TREE item delete 1}
 			unset ::snmp::namelist			
 			snmp_loadmib -mall -M$newdir
@@ -1028,5 +1031,57 @@ proc save_result {} {
 		puts -nonewline $fd [$RESULT get 1.0 end]
 		close $fd
 	}
+}
+
+proc goto_next_bm {} {
+	global TREE
+	set now [$TREE selection get]
+	foreach new $::snmp::bookmark_list {
+		if {$new > $now} {
+			goto_node $new
+			break
+		}
+	}
+}
+
+proc goto_prev_bm {} {
+	global TREE
+	set now [$TREE selection get]
+	set ind 0
+	foreach new $::snmp::bookmark_list {
+		if { ($new >= $now) && $ind} {
+			goto_node [lindex $::snmp::bookmark_list [expr $ind-1]]
+			break
+		}
+		incr ind
+	}
+}
+
+proc save_bookmark {} {
+	global TREE confPath
+	set fd [open [file join $confPath bookmark] w]
+	foreach name [array names ::BOOKMARK] {
+		if {[regexp {(.+),state} $name match oid]} {
+			if {$::BOOKMARK($name)} {
+				puts $fd "$oid \t $::BOOKMARK($oid,name)"
+			}
+		}
+	}		
+	close $fd
+}
+
+proc load_bookmark {} {
+	global TREE confPath
+	if [file exist [file join $confPath bookmark]] { 
+		set fd [open [file join $confPath bookmark] r]
+		while {1} {
+			if {[gets $fd line]>0} {
+				set ::BOOKMARK([lindex $line 0],state) 2
+			}
+			if [eof $fd] {close $fd ; break}
+		}	
+	} else {
+		array set ::BOOKMARK ""
+	}		
 }
 

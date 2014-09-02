@@ -18,21 +18,29 @@ set SystemHighlightText [.listbox cget -selectforeground]
 
 
 $TREE element create elemRect rect -fill [list $::SystemHighlight {selected}]
-$TREE element create elemImage image
-# $TREE element create elemImage shellicon -size small
-$TREE element create elemText text  -font [list $::tree_font ""] -fill [list $::SystemHighlightText {selected}]
-$TREE element create elemText2 text -font [list $::tree_font ""] -fill [list $::SystemHighlightText {selected}]
-$TREE element create elemText3 text -font [list $::tree_font ""] -fill [list $::SystemHighlightText {selected}]
 
+
+$TREE element create elemText text  -font [list $::tree_font ""] -fill [list $::SystemHighlightText {selected}] ;#mibname
+$TREE element create elemText2 text -font [list $::tree_font ""] -fill [list $::SystemHighlightText {selected}] ;# short oid
+$TREE element create elemText3 text -font [list $::tree_font ""] -fill [list $::SystemHighlightText {selected}] ;# full oid
+$TREE element create elemText4 text -text "" -fill { blue selected blue {} } -font [list $::tree_font ""] ;# bookmark
 
 $TREE style create style1
-$TREE style elements style1 {elemImage elemRect elemText elemText2 elemText3}
-# $TREE style elements style1 { elemRect elemText elemText2}
-# puts [$TREE style configure style1]
+#$TREE style create style2
+$TREE style elements style1 {elemText4 elemRect elemText elemText2 elemText3 }
+#$TREE style elements style2 {elemText4 elemRect elemText elemText2 elemText3 }
+
 $TREE style layout style1 elemRect -union {elemText elemText2}
 $TREE style layout style1 elemText -ipadx 5
 $TREE style layout style1 elemText2 -ipadx 5
 $TREE style layout style1 elemText3 -ipadx 5
+
+#$TREE style layout style2 elemRect -union {elemText elemText2}
+#$TREE style layout style2 elemText -ipadx 5
+#$TREE style layout style2 elemText2 -ipadx 5
+#$TREE style layout style2 elemText3 -ipadx 5
+
+
 $TREE item configure root -button yes
 $TREE item style set root $columnID style1
 $TREE item element configure root $columnID elemText -text "The root item"
@@ -49,11 +57,12 @@ proc buildtree {} {
 	global TREE NODE columnID confPath
 
 	if {![file exist $confPath/translate_output.txt]} {
-		snmp_translate -TZ
+		snmp_translate -TZ -f[file join $confPath translate_output.txt]
 	}
-	set fd [open $confPath/translate_output.txt r]
+	set fd [open [file join $confPath translate_output.txt] r]
 	set data [split [read $fd] \n]
 	close $fd
+	load_bookmark
 	add_node NODE(.) root "MIB Tree" [list "MIB Tree" "Node MIB Tree" "0" "0"]
 
 	$TREE item element configure $NODE(.) $columnID elemText2 -text ""
@@ -62,7 +71,7 @@ proc buildtree {} {
 #	$TREE item tag add $NODE(0) ccitt
 	add_node NODE(1) $NODE(.) "iso"   [list "iso" 1 0 0]
 	$TREE item element configure $NODE(1) $columnID elemText2 -text "(1)"
-#	$TREE item tag add $NODE(1) iso
+
 	foreach subtree $data {
 		if {$subtree==""} {continue}
 		if {[lindex $subtree 1]=="0.0"} {continue} 
@@ -99,7 +108,15 @@ proc add_node {node_c node_p mibname data} {
 	regexp {.+\.(\d+)} [lindex $data 1] match qq
 	$TREE item element configure $NODE $columnID elemText2 -text \($qq\)
 	$TREE item element configure $NODE $columnID elemText3 -text \([lindex $data 1]\)
-	# for search purpose	
+	if [info exists ::BOOKMARK([lindex $data 1],state)] {
+		set ::BOOKMARK([lindex $data 1],name) $mibname
+		$TREE item element configure $NODE $columnID elemText4 -text "★"
+		lappend ::snmp::bookmark_list $NODE
+		set ::snmp::bookmark_list [lsort -integer $::snmp::bookmark_list]
+	} else {
+		$TREE item element configure $NODE $columnID elemText4 -text ""
+	}
+	# for search purpose
 	lappend ::snmp::namelist [lindex $data 0]
 	#lappend ::snmp::oidlist [lindex $data 1]
 }

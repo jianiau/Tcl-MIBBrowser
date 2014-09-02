@@ -3,11 +3,19 @@
 set appPath [file normalize [info script]]
 if {[file type $appPath] == "link"} {set appPath [file readlink $appPath]}
 set appPath [file dirname $appPath]
-if {[namespace exists ::vfs]} {
-	set confPath [file dirname $appPath]
-} else {
-	set confPath $appPath
-}
+
+set confPath [file join $env(HOME) .TCl-MIBBrowser]
+
+file mkdir [file join $confPath profile]
+file mkdir [file join $confPath dumpfile]
+
+
+#if [file exist $confPath]
+#if {[namespace exists ::vfs]} {
+#	set confPath [file dirname $appPath]
+#} else {
+#	set confPath $appPath
+#}
 
 lappend ::auto_path [file join $appPath lib]
 
@@ -103,7 +111,8 @@ wm protocol . WM_DELETE_WINDOW {
 		}
 		::ini::commit $inifd
 		::ini::close $inifd
-	}		
+	}
+	save_bookmark
 	exit
 }
 
@@ -382,7 +391,7 @@ wm geometry . ${width}x${height}+0+0
 wm geometry . 1200x675+0+0
 wm deiconify .
 snmp_loadmib -mall -M$::snmp::MIBDIRS
-snmp_translate -TZ
+snmp_translate -TZ -f[file join $confPath translate_output.txt]
 buildtree
 $TREE selection add 1
 change_tree_dsp
