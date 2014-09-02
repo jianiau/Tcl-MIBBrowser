@@ -25,11 +25,15 @@ proc list_search {} {
 	if {$::snmp::searchname==""} {
 		set ::results $ret
 		return
-	}
-	# if search oid, direct lookup array NODE
-	if [info exist NODE($::snmp::searchname)] {
-		set ::results $NODE($::snmp::searchname)
-		return
+	}	
+	# if start with "." direct goto oid
+	if {[regexp {^\.} $::snmp::searchname] || [regexp {\.} $::snmp::searchname]} {
+		set oid [string trim $::snmp::searchname .]
+		if [info exist NODE($oid)] {
+			set ::results $NODE($oid)
+			goto_node $NODE($oid)
+		}	
+		return		
 	}
 	foreach name $::snmp::namelist {
 		if {$::search_fullmatch} {
@@ -60,9 +64,9 @@ proc list_search {} {
 
 
 
-proc search_cmd {} {
+proc goto_next_match {} {
 	global NODE
-	list_search	
+	#list_search
 	if {[llength $::results]==0} {
 		puts "can not found $::snmp::searchname"
 		return

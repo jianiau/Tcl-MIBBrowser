@@ -57,22 +57,22 @@ proc buildtree {} {
 	add_node NODE(.) root "MIB Tree" [list "MIB Tree" "Node MIB Tree" "0" "0"]
 
 	$TREE item element configure $NODE(.) $columnID elemText2 -text ""
-	add_node NODE(0) $NODE(.) "ccitt" [list "ccitt" 0 0 0]
-	$TREE item element configure $NODE(0) $columnID elemText2 -text "(0)"
-	$TREE item tag add $NODE(0) ccitt
+#	add_node NODE(0) $NODE(.) "ccitt" [list "ccitt" 0 0 0]
+#	$TREE item element configure $NODE(0) $columnID elemText2 -text "(0)"
+#	$TREE item tag add $NODE(0) ccitt
 	add_node NODE(1) $NODE(.) "iso"   [list "iso" 1 0 0]
 	$TREE item element configure $NODE(1) $columnID elemText2 -text "(1)"
-	$TREE item tag add $NODE(1) iso
+#	$TREE item tag add $NODE(1) iso
 	foreach subtree $data {
 		if {$subtree==""} {continue}
+		if {[lindex $subtree 1]=="0.0"} {continue} 
 		regexp {(.+)\.} [lindex $subtree 1] match parents
 		set name [lindex $subtree 0]
 		set oid  [lindex $subtree 1]		
 		regexp {type=(.+)} [lindex $subtree 2] match type
 		regexp {access=(.+)} [lindex $subtree 3] match access		
 		add_node NODE($oid) $NODE($parents) $name [list $name $oid $type $access]
-		$TREE item tag add $NODE($oid) $name		
-		#$TREE item element configure $NODE($parents) $columnID elemImage -image {img_folder_open {open} img_folder_close {}}
+#		$TREE item tag add $NODE($oid) $name
 	}
 }
 
@@ -109,11 +109,14 @@ proc goto_node {node} {
 	open_node $node
 	set prev [$TREE selection get]
 	if {$node != $prev} {
-		$TREE selection modify $node $prev	
+		$TREE selection modify $node $prev
 	}
+
+	
 #	Sleep 100 
 #	$TREE see $node
 	TreeCtrl::SetActiveItem $TREE $node
+	set ::snmp::selection [$TREE selection get 0]
 }
 
 

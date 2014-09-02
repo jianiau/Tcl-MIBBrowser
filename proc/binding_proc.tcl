@@ -125,11 +125,11 @@ bind $TREE <Double-Button-1> {tree_dbclick %x %y}
 
 bind $TREE <bracketleft> {
 	set ::direction up
-	search_cmd
+	goto_next_match
 }
 bind $TREE <bracketright> {
 	set ::direction down
-	search_cmd
+	goto_next_match
 }
 
 bind $TREE <slash> {
@@ -138,7 +138,7 @@ bind $TREE <slash> {
 }
 
 bind $TREE <Control-w> {
-	 ::snmp::snmpwalk
+	::snmp::snmpwalk
 }
 
 bind $TREE <Control-n> {
@@ -165,3 +165,90 @@ bind $TREE <KeyRelease-Control_L> {
 	set ::TREE_DBG 0
 }
 
+
+## TREE search
+
+bind $LF_SEARCH.en_search <KeyRelease> {
+	# search patten change
+	if {![string eq $::snmp::searchname_buf $::snmp::searchname]} {
+		set ::snmp::searchname_buf $::snmp::searchname
+#		set ::snmp::selection 1
+		list_search
+		if {[ lsearch $::results [$TREE selection get]]<0} {
+			goto_next_match
+		}
+	} 	
+}
+
+bind $LF_SEARCH.en_search <bracketleft> {
+	set ::direction up
+	goto_next_match
+}
+
+bind $LF_SEARCH.en_search <bracketright> {
+	set ::direction down
+	goto_next_match
+}
+
+bind $LF_SEARCH.en_search <Prior> {
+	set ::direction up
+	goto_next_match
+}
+
+bind $LF_SEARCH.en_search <Next> {
+	set ::direction down
+	goto_next_match
+}
+
+bind $LF_SEARCH.en_search <Escape> {
+	focus $TREE
+}
+
+bind $LF_SEARCH.en_search <Return> {
+	goto_next_match
+}
+
+
+
+
+
+## result search
+set ::match_mark 0.0
+bind $LF_SEARCH2.en_search <Return> {
+	if { $::res_direction == "down" } {
+		mark_next
+	} else {
+		mark_prev
+	}
+}
+
+bind $LF_SEARCH2.en_search <KP_Enter> {
+	if { $::res_direction == "down" } {
+		mark_next
+	} else {
+		mark_prev
+	}
+}
+
+bind $LF_SEARCH2.en_search <KeyRelease> {
+	if {![string eq $::searchresult_buf $::searchresult]} {
+		set ::searchresult_buf $::searchresult
+		search_result
+		if { $::res_direction == "down" } {
+			mark_next
+		} else {
+			mark_prev
+		}
+	}		
+}
+
+
+bind $LF_SEARCH2.en_search <Prior> {
+	set ::res_direction  up
+	mark_prev
+}
+
+bind $LF_SEARCH2.en_search <Next> {
+	set ::res_direction down
+	mark_next
+}
