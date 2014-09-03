@@ -24,7 +24,7 @@ package require treectrl
 package require inifile
 package require bigint
 package require sha1
-
+package require ip
 
 namespace eval ::snmp {}
 source [file join $appPath proc PBKDF2.tcl]
@@ -32,8 +32,8 @@ source [file join $appPath proc MIB_browser_proc.tcl]
 
 
 # set init value
-
-
+set ::snmp::app snmp_getnext
+set ::snmp::IPv6 0
 set ::snmp::ver 2c
 set ::snmp::comm_r public
 set ::snmp::comm_w private
@@ -101,7 +101,7 @@ wm protocol . WM_DELETE_WINDOW {
 	
 	if {$reply==0} {
 		set inifd [::ini::open $confPath/config.ini w+]
-		foreach key {timeout retry MIBDIRS output useroutput agentip ver comm_r comm_w usm level \
+		foreach key {timeout retry MIBDIRS output useroutput IPv6 agentip ver comm_r comm_w usm level \
 					authtype authpw authkey authkeytype\
 					privtype privpw privkey  privkeytype searchname useDH DHKey } {
 			::ini::set $inifd snmp $key [set ::snmp::$key]
@@ -284,8 +284,11 @@ grid rowconfig $PW.fr_right 1 -weight 1
 
 
 # Query tab ,top frame
+ttk::checkbutton $LF_AGENT.ckb_ip -text "IPv6" -variable ::snmp::IPv6 -command {
+	set ::snmp::cmd "$::snmp::app [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr] $::snmp::OID"
+}	
 ttk::entry $LF_AGENT.en_ip -textvariable ::snmp::agentip -width 32
-pack  $LF_AGENT.en_ip -side left -fill both -padx 5
+pack $LF_AGENT.ckb_ip $LF_AGENT.en_ip -side left -fill both -padx 5
 
 ttk::entry $LF_CMD.en_cmd -textvariable ::snmp::cmd 
 set ::snmp::cmd ""
@@ -295,6 +298,10 @@ ttk::button $LF_CMD.bt_cmd -text "Run" -command {
 	update
 	$RESULT tag remove match 1.0 end
 	$RESULT tag remove mark  1.0 end
+
+	#set temp_cmd [regsub -all {\[} $::snmp::cmd \\\[]
+	#set temp_cmd [regsub -all {\]} $temp_cmd \\\]]
+	#puts temp_cmd=$temp_cmd
 	if [catch {eval $::snmp::cmd} ret] {
 		log_result "err: $ret\n" err
 	} else {
@@ -304,6 +311,7 @@ ttk::button $LF_CMD.bt_cmd -text "Run" -command {
 	}
 	log_result "==== Finish ====\n"
 }
+
 pack $LF_CMD.en_cmd -fill both -side left -expand 1 -padx 5 
 pack $LF_CMD.bt_cmd -side right
 

@@ -585,7 +585,7 @@ proc snmpget_gui {{method get}} {
 }
 
 proc get_index {} {
-	if [catch {eval snmp_walk [::snmp::cmdopt] -OQnb $::snmp::agentip  $::snmp::OID} ret] {
+	if [catch {eval snmp_walk [::snmp::cmdopt] -OQnb [::snmp::addr]  $::snmp::OID} ret] {
 		return [list 0 $ret]
 	} else {
 		set index_list ""
@@ -602,9 +602,9 @@ proc get_index {} {
 proc snmpget_cmd {oid} {
 	global RESULT
 	if {$::result_clear} {$RESULT delete 1.0 end}
-	set ::snmp::cmd "snmp_get [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $oid"
+	set ::snmp::cmd "snmp_get [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $oid"
 	log_result "\n==== Start ====\n"
-	if [catch {eval snmp_get [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $oid } ret] {
+	if [catch {eval snmp_get [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $oid } ret] {
 		log_result "Err: $ret \n"	
 	} else {
 		log_result "1.  [lindex $ret 0]\n"
@@ -615,9 +615,9 @@ proc snmpget_cmd {oid} {
 proc snmpdump_cmd {oid} {
 	global RESULT confPath
 	if {$::result_clear} {$RESULT delete 1.0 end}
-	#set ::snmp::cmd "snmp_get [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $oid"
+	#set ::snmp::cmd "snmp_get [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $oid"
 	log_result "\n==== Start ====\n"
-	if [catch {eval snmp_get [::snmp::cmdopt] -Oqvx -IJ  $::snmp::agentip  $oid } ret] {
+	if [catch {eval snmp_get [::snmp::cmdopt] -Oqvx -IJ  [::snmp::addr]  $oid } ret] {
 		log_result "*************Err: $ret \n"	
 	} else {
 		set hexdata [join [split [lindex $ret 0] " \n\""] ""]
@@ -646,7 +646,7 @@ proc snmpupload_cmd {oid} {
 	fconfigure $fd -translation binary
 	binary scan [read $fd] H* hexdata
 	
-	if [catch {eval snmp_set [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $oid x $hexdata} ret] {
+	if [catch {eval snmp_set [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $oid x $hexdata} ret] {
 		log_result "*************Err: $ret \n"	
 	} else {
 		log_result "Upload $loadfd\n"		
@@ -657,9 +657,9 @@ proc snmpupload_cmd {oid} {
 proc snmpset_cmd {oid} {
 	global RESULT
 	if {$::result_clear} {$RESULT delete 1.0 end}
-	set ::snmp::cmd "snmp_set [::snmp::cmdopt w] [::snmp::outfmt] $::snmp::agentip  $oid $::snmp::TYPE $::snmp::setvalue"
+	set ::snmp::cmd "snmp_set [::snmp::cmdopt w] [::snmp::outfmt] [::snmp::addr]  $oid $::snmp::TYPE $::snmp::setvalue"
 	log_result "\n==== Start ====\n"
-	if [catch {eval snmp_set [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $oid $::snmp::TYPE $::snmp::setvalue } ret] {
+	if [catch {eval snmp_set [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $oid $::snmp::TYPE $::snmp::setvalue } ret] {
 		log_result "Error: [string trim $ret]\n" err
 	} else {
 		log_result "1.  [lindex $ret 0]\n"
@@ -709,7 +709,7 @@ proc snmpset_gui {} {
 		#puts [$w.lf2.cb get]
 		#puts w=$w
 		set oid [.snmpset.lf2.cb get]
-		set ::snmp::setvalue [lindex [eval snmp_get [::snmp::cmdopt]  -OqvU -IJ $::snmp::agentip  $oid] 0]
+		set ::snmp::setvalue [lindex [eval snmp_get [::snmp::cmdopt]  -OqvU -IJ [::snmp::addr]  $oid] 0]
 	}
 	ttk::button $w.lf3.bt2_conf -text "Set" -command {
 		snmpset_cmd $oid
@@ -789,10 +789,10 @@ proc ::snmp::snmpwalk {} {
 	$RESULT tag remove match 1.0 end
 	$RESULT tag remove mark  1.0 end
 	if {$::result_clear} {$RESULT delete 1.0 end}
-	set ::snmp::cmd "snmp_walk [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID"
+	set ::snmp::cmd "snmp_walk [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID"
 	log_result "\n==== Start ====\n"
 	update
-	if [catch {eval snmp_walk [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID} ret] {
+	if [catch {eval snmp_walk [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID} ret] {
 		log_result "Error: [string trim $ret]\n" err
 	} else {
 		set item 1	
@@ -826,10 +826,10 @@ proc ::snmp::snmpgetnext {} {
 	$RESULT tag remove match 1.0 end
 	$RESULT tag remove mark  1.0 end
 	if {$::result_clear} {$RESULT delete 1.0 end}
-	set ::snmp::cmd "snmp_getnext [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID"	
+	set ::snmp::cmd "snmp_getnext [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID"	
 	log_result "\n==== Start ====\n"
 	update
-	if [catch {eval snmp_getnext [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID} ret] {
+	if [catch {eval snmp_getnext [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID} ret] {
 		log_result "Error: [string trim $ret]\n" err
 	} else {
 		log_result "1.  [lindex $ret 0]\n"
@@ -861,7 +861,7 @@ proc ::snmp::cmdopt {{rw r}} {
 	
 	if {$::snmp::useDH && !$::snmp::DHInit} {
 		log_result "snmpv3 Diffie-Hellman Init\n"		
-		set agentkey 0x[get_agent_key $::snmp::agentip $::snmp::usm]
+		set agentkey 0x[get_agent_key [::snmp::addr] $::snmp::usm]
 		log_result "Agent key is $agentkey\n"
 		set sk [calc_sharekey $agentkey $::snmp::DHKey]
 		log_result "Share key is $sk\n"
@@ -907,6 +907,16 @@ proc ::snmp::cmdopt {{rw r}} {
 }
 
 
+proc ::snmp::addr {} {
+	if {$::snmp::IPv6} {
+		if {[::ip::version $::snmp::agentip] ==6} {
+			return udp6:\\\[[string trim $::snmp::agentip]\\\]
+		}		
+		return udp6:[string trim $::snmp::agentip]
+	} else {
+		return [string trim $::snmp::agentip]
+	}	
+}
 
 
 proc calc_sharekey {remote_public local_random} {

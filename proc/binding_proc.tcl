@@ -116,7 +116,9 @@ $TREE notify bind $TREE <Selection> {
 		set ::snmp::ACCESS $access
 		set ::snmp::selection %S	
 		set ::snmp::TYPE $::snmp::type_table($type)
-		puts ::snmp::OID=$::snmp::OID
+		#puts ::snmp::OID=$::snmp::OID
+		#set ::snmp::cmd "$::snmp::app [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID"
+		set ::snmp::cmd "$::snmp::app [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr] $::snmp::OID"
 	}
 }
 
@@ -310,6 +312,10 @@ bind $TREE <bracketleft> {
 bind $TREE <bracketright> {
 	#set ::direction down
 	goto_next_bm
+}
+
+bind $LF_AGENT.en_ip <KeyRelease> {
+	set ::snmp::cmd "$::snmp::app [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr] $::snmp::OID"
 }
 
 
