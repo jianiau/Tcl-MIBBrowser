@@ -33,55 +33,66 @@ bind $RESULT <KeyRelease-slash> {
 
 ## TREE bindings
 
-bind $TREE <ButtonRelease-3> {
-
+bind $TREE <ButtonRelease-3> {	
 	catch {destroy $TREE.m}
 	menu $TREE.m -tearoff 0
-	$TREE.m add command -label "snmpwalk" -command {
-		::snmp::snmpwalk
-	}
-	$TREE.m add separator
-	if {($::snmp::ACCESS==18)||($::snmp::ACCESS==19)||($::snmp::ACCESS==48)||$::TREE_DBG} {
-		$TREE.m add command -label "snmpget" -command {::snmp::snmpget}
+	if {$::snmp::OID==""} {
+		$TREE.m add command -label "Reload mibs" -command {
+			save_bookmark
+			set ::snmp::bookmark_list ""
+			array unset ::BOOKMARK
+			catch {$TREE item delete 1}		
+			unset ::snmp::namelist						
+			snmp_loadmib -mall -M$::snmp::MIBDIRS
+			snmp_translate -TZ
+			catch {buildtree}									
+		}
 	} else {
-		$TREE.m add command -label "snmpget" -state disable
-	}
+		$TREE.m add command -label "snmpwalk" -command {
+			::snmp::snmpwalk
+		}
+		$TREE.m add separator
+		if {($::snmp::ACCESS==18)||($::snmp::ACCESS==19)||($::snmp::ACCESS==48)||$::TREE_DBG} {
+			$TREE.m add command -label "snmpget" -command {::snmp::snmpget}
+		} else {
+			$TREE.m add command -label "snmpget" -state disable
+		}
 	
-	$TREE.m add command -label "snmpgetnext" -command {
-		::snmp::snmpgetnext
-	}
-	#puts ::snmp::ACCESS=$::snmp::ACCESS
-	if {($::snmp::ACCESS==19)||($::snmp::ACCESS==20)||($::snmp::ACCESS==48)||$::TREE_DBG} {
-		$TREE.m add command -label "snmpset" -command {::snmp::snmpset}
-	} else {
-		$TREE.m add command -label "snmpset" -command {::snmp::snmpset} -state disable
-	}
+		$TREE.m add command -label "snmpgetnext" -command {
+			::snmp::snmpgetnext
+		}
+		#puts ::snmp::ACCESS=$::snmp::ACCESS
+		if {($::snmp::ACCESS==19)||($::snmp::ACCESS==20)||($::snmp::ACCESS==48)||$::TREE_DBG} {
+			$TREE.m add command -label "snmpset" -command {::snmp::snmpset}
+		} else {
+			$TREE.m add command -label "snmpset" -command {::snmp::snmpset} -state disable
+		}
 	
-	$TREE.m add separator
+		$TREE.m add separator
 	
-	if { ( ($::snmp::ACCESS==18) || ($::snmp::ACCESS==19) || ($::snmp::ACCESS==48)) && ($::snmp::TYPE=="s")||$::TREE_DBG} {
-		$TREE.m add command -label "dump OCTET" -command {::snmp::snmpdump}
-	} else {
-		$TREE.m add command -label "dump OCTET" -state disable
+		if { ( ($::snmp::ACCESS==18) || ($::snmp::ACCESS==19) || ($::snmp::ACCESS==48)) && ($::snmp::TYPE=="s")||$::TREE_DBG} {
+			$TREE.m add command -label "dump OCTET" -command {::snmp::snmpdump}
+		} else {
+			$TREE.m add command -label "dump OCTET" -state disable
+		}
+	
+		if { (($::snmp::ACCESS==19)||($::snmp::ACCESS==20)||($::snmp::ACCESS==48)) && ($::snmp::TYPE=="s")||$::TREE_DBG} {
+			$TREE.m add command -label "upload file" -command {::snmp::snmpupload}
+		} else {
+			$TREE.m add command -label "upload file" -command {} -state disable
+		}
+	
+		$TREE.m add separator
+	
+		$TREE.m add command -label "Copy OID" -command {
+			clipboard clear
+		    clipboard append -- $::snmp::OID
+		}
+		$TREE.m add command -label "Copy name" -command {
+			clipboard clear
+		    clipboard append -- $::snmp::NAME
+		}
 	}
-	
-	if { (($::snmp::ACCESS==19)||($::snmp::ACCESS==20)||($::snmp::ACCESS==48)) && ($::snmp::TYPE=="s")||$::TREE_DBG} {
-		$TREE.m add command -label "upload file" -command {::snmp::snmpupload}
-	} else {
-		$TREE.m add command -label "upload file" -command {} -state disable
-	}
-	
-	$TREE.m add separator
-	
-	$TREE.m add command -label "Copy OID" -command {
-		clipboard clear
-        clipboard append -- $::snmp::OID
-	}
-	$TREE.m add command -label "Copy name" -command {
-		clipboard clear
-        clipboard append -- $::snmp::NAME
-	}
-	
 	tk_popup $TREE.m %X %Y
 	set ::TREE_DBG 0
 }
@@ -105,6 +116,7 @@ $TREE notify bind $TREE <Selection> {
 		set ::snmp::ACCESS $access
 		set ::snmp::selection %S	
 		set ::snmp::TYPE $::snmp::type_table($type)
+		puts ::snmp::OID=$::snmp::OID
 	}
 }
 
@@ -275,6 +287,7 @@ bind $LF_SEARCH2.en_search <Next> {
 # bookmark
 set ::snmp::bookmark_list ""
 bind $TREE <m> {
+	if {$::snmp::OID==""} {return}
 	if {[$TREE item element cget [$TREE selection get] $columnID elemText4 -text] == ""} {
 		$TREE item element configure [$TREE selection get] $columnID elemText4 -text "★"
 		lappend ::snmp::bookmark_list [$TREE selection get]

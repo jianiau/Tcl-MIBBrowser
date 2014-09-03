@@ -63,7 +63,7 @@ proc buildtree {} {
 	set data [split [read $fd] \n]
 	close $fd
 	load_bookmark
-	add_node NODE(.) root "MIB Tree" [list "MIB Tree" "Node MIB Tree" "0" "0"]
+	add_node NODE(.) root "MIB Tree" [list "" "" "0" "0"]
 
 	$TREE item element configure $NODE(.) $columnID elemText2 -text ""
 #	add_node NODE(0) $NODE(.) "ccitt" [list "ccitt" 0 0 0]

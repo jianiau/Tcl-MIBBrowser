@@ -393,7 +393,8 @@ wm deiconify .
 snmp_loadmib -mall -M$::snmp::MIBDIRS
 snmp_translate -TZ -f[file join $confPath translate_output.txt]
 buildtree
-$TREE selection add 1
+#$TREE selection add 1
+goto_node $NODE(1)
 change_tree_dsp
 focus $TREE
 

@@ -767,13 +767,15 @@ proc snmpset_gui {} {
 
 proc ::snmp::snmpdump {} {
 	global RESULT
+	if {$::snmp::OID==""} {return}
 	$RESULT tag remove match 1.0 end
 	$RESULT tag remove mark  1.0 end
 	snmpget_gui dump
 }
 
 proc ::snmp::snmpupload {} {
-	global RESULT
+	global RESULT	
+	if {$::snmp::OID==""} {return}	
 	$RESULT tag remove match 1.0 end
 	$RESULT tag remove mark  1.0 end
 	snmpget_gui upload
@@ -783,6 +785,7 @@ proc ::snmp::snmpupload {} {
 
 proc ::snmp::snmpwalk {} {
 	global RESULT
+	if {$::snmp::OID==""} {return}
 	$RESULT tag remove match 1.0 end
 	$RESULT tag remove mark  1.0 end
 	if {$::result_clear} {$RESULT delete 1.0 end}
@@ -803,6 +806,7 @@ proc ::snmp::snmpwalk {} {
 
 proc ::snmp::snmpset {} {
 	global RESULT
+	if {$::snmp::OID==""} {return}
 	$RESULT tag remove match 1.0 end
 	$RESULT tag remove mark  1.0 end
 	snmpset_gui
@@ -810,6 +814,7 @@ proc ::snmp::snmpset {} {
 
 proc ::snmp::snmpget {} {
 	global RESULT
+	if {$::snmp::OID==""} {return}
 	$RESULT tag remove match 1.0 end
 	$RESULT tag remove mark  1.0 end
 	snmpget_gui
@@ -817,6 +822,7 @@ proc ::snmp::snmpget {} {
 
 proc ::snmp::snmpgetnext {} {
 	global RESULT
+	if {$::snmp::OID==""} {return}
 	$RESULT tag remove match 1.0 end
 	$RESULT tag remove mark  1.0 end
 	if {$::result_clear} {$RESULT delete 1.0 end}
