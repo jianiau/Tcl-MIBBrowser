@@ -67,7 +67,7 @@ set ::snmp::searchname	""
 set ::search_fullmatch 0
 set ::search_case 0
 set ::direction down
-
+set ::replace_macro_addr 1
 # font
 ttk::style configure My.TRadiobutton -font {"DejaVu Sans Mono" 9 {}}
 set ::tree_font   {"Droid Sans" 10 normal}
@@ -77,6 +77,10 @@ set ::result_font {"Droid Sans" 10 normal}
 set ::show_mib_info 1
 set ::result_clear 1
 
+for {set i 1} {$i<=12} {incr i} {
+	set ::quick(F$i,name) "F$i"
+	set ::quick(F$i,cmd) ""
+}
 # update value via inifile
 
 
@@ -91,8 +95,14 @@ if [file exist $confPath/config.ini] {
 	foreach key [ ::ini::keys $inifd global] {
 		set ::$key [ ::ini::value $inifd global $key]
 	}}
+	catch {
+	foreach key [ ::ini::keys $inifd quick] {
+		set ::quick($key) [ ::ini::value $inifd quick $key]
+	}}
 	::ini::close $inifd
 }
+
+
 
 wm title . "Tcl-MIBBrowser"
 wm withdraw .
@@ -107,8 +117,12 @@ wm protocol . WM_DELETE_WINDOW {
 					privtype privpw privkey  privkeytype useDH DHKey } {
 			::ini::set $inifd snmp $key [set ::snmp::$key]
 		}
-		foreach key {tree_font info_font result_font show_mib_info result_clear} {
+		foreach key {tree_font info_font result_font show_mib_info result_clear replace_macro_addr} {
 			::ini::set $inifd global $key [set ::$key]
+		}
+		for {set i 1} {$i<=12} {incr i} {
+			::ini::set $inifd quick F$i.name [$TOOL_BAR.bt_quick$i cget -text]
+			::ini::set $inifd quick F$i.cmd [$TOOL_BAR.bt_quick$i cget -command]
 		}
 		::ini::commit $inifd
 		::ini::close $inifd
@@ -164,7 +178,6 @@ menu .mbar.option.search -tearoff 0
 # view menu
 menu .mbar.view -tearoff 0
 .mbar.view add checkbutton -label "Show MIB Info" -variable ::show_mib_info -command {
-	puts $::show_mib_info
 	if {$::::show_mib_info} {
 		grid $LF_MIBINFO -row 0 -column 0 -sticky we
 	} else {
@@ -206,7 +219,7 @@ menu .mbar.macro.record -tearoff 0
 	set ::start_macro_record 0	
 } -state disable
 .mbar.macro add command -label "Run Macro" -command {run_macro}
-
+.mbar.macro add checkbutton -label "Replace Macro IP" -variable ::replace_macro_addr
 
 
 .mbar add cascade -label "Help"
@@ -237,15 +250,17 @@ grid rowconfigure . 1 -weight 1
 ttk::button  $TOOL_BAR.bt_protocol -text "SNMP Setting" -command snmp_protocol
 ttk::button  $TOOL_BAR.bt_mibtree  -text "MIB Setting"  -command mib_setup
 ttk::separator $TOOL_BAR.sep -orient vertical
-for {set i 1} {$i<=8} {incr i} {
-	ttk::button  $TOOL_BAR.bt_quick$i  -text "$i"  -command "puts ==$i"
+for {set i 1} {$i<=12} {incr i} {
+	ttk::button  $TOOL_BAR.bt_quick$i  -text $::quick(F$i.name)  -command $::quick(F$i.cmd)
 }
+
+
 
 pack  $TOOL_BAR.bt_protocol -padx 5 -pady 5 -anchor w -side left
 pack  $TOOL_BAR.bt_mibtree  -padx 5 -pady 5 -anchor w -side left
 pack  $TOOL_BAR.sep -fill y -padx 5 -pady 5 -anchor w -side left
-for {set i 1} {$i<=8} {incr i} {
-	pack  $TOOL_BAR.bt_quick$i -padx 5 -pady 5 -anchor w -side left
+for {set i 1} {$i<=12} {incr i} {
+	pack  $TOOL_BAR.bt_quick$i -ipadx 5 -padx 5 -pady 5 -anchor w -side left
 }
 #pack  $TOOL_BAR.lb_status   -padx 10 -pady 0 -anchor e -side right
 ## end tool bar
@@ -292,7 +307,7 @@ grid rowconfigure $QUERY 1 -weight 1
 
 ttk::frame $PW.fr_left
 ttk::frame $PW.fr_right
-$PW insert end $PW.fr_left -weight 1
+$PW insert end $PW.fr_left  -weight 2;#-width 500 ;#-weight 900
 $PW insert end $PW.fr_right -weight 1
 
 
@@ -412,7 +427,7 @@ set x [expr int([winfo screenwidth  .]*0.1)]
 set y [expr int([winfo screenheight .]*0.1)]
 
 wm geometry . ${width}x${height}+0+0
-wm geometry . 1200x675+0+0
+#wm geometry . 1200x675+0+0
 wm deiconify .
 snmp_loadmib -mall -M$::snmp::MIBDIRS
 snmp_translate -TZ -f[file join $confPath translate_output.txt]
@@ -429,4 +444,6 @@ $RESULT tag configure mark -background orange
 $RESULT tag raise mark match
 set ::results ""
 
+# 
+proc ::tk::FirstMenu w {}
 

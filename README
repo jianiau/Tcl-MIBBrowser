@@ -8,7 +8,10 @@ SNMP v1, v2c, and v3.
 SNMPv3: Diffie-Hellman 
 Support OS: Linux, Windows 7, Windows XP
 MIB files loading
-
+IPv6
+Macro
+User defined function key
+Bookmark
 
 Screenshots:
 http://jianiau.blogspot.tw/2014/08/tcl-mibbrowser-screenshots.html

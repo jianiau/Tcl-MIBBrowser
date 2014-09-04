@@ -133,7 +133,7 @@ proc goto_node {node} {
 #	Sleep 100 
 #	$TREE see $node
 	TreeCtrl::SetActiveItem $TREE $node
-	set ::snmp::selection [$TREE selection get 0]
+	set ::snmp::selection [$TREE selection get 0]	
 }
 
 

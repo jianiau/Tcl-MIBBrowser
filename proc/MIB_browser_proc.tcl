@@ -1012,20 +1012,21 @@ proc load_bookmark {} {
 
 proc run_cmd {str} {
 	global RESULT
+	
 	$RESULT tag remove match 1.0 end
 	$RESULT tag remove mark  1.0 end
 	if {$::result_clear} {$RESULT delete 1.0 end}
 	set ::snmp::cmd $str
 	log_result "==== Start ====\n"
 	update
-	set line_num 1
-	if {$::start_macro_record} {
-		append ::macro_cmds $str\n
+	set line_num 1	
+	if {$::start_macro_record} {	
+		append ::macro_cmds $str\n		
 	}
 	
 	if [catch {eval $str} ret] {
 		log_result "Error: [string trim $ret]\n" err
-		return -code error
+		#return -code error
 	} else {
 		foreach line $ret {
 			log_result "$line_num. $line\n"
@@ -1056,7 +1057,8 @@ proc macro_gui {} {
 		if {$macrofile != ""} {
 			set fd [open $macrofile w+]
 			puts -nonewline $fd [.macro.text get 1.0 end]
-			close $fd									
+			close $fd
+			destroy .macro
 		}		
 	}
 	ttk::button $p.fr.bt2 -text Cancel -command {destroy .macro}
@@ -1085,8 +1087,9 @@ proc run_macro {{filename ""}} {
 		set line_num 1
 		while {![eof $fd]} {
 			if {[gets $fd line]>0} {
-				if [catch {run_cmd $line} ret] {
-					log_result "Error in line $line_num: $line \n$ret\n" err
+				if [catch {run_macro_cmd $line} ret] {
+					log_result "Error in line $line_num: $line \n[string trim $ret ]" err
+					log_result "==== Finish ====\n"
 					break
 				} else {
 					log_result "$ret\n"
@@ -1095,8 +1098,39 @@ proc run_macro {{filename ""}} {
 			incr line_num
 		}
 		close $fd
-#		set fd [open $macro r]
-#		eval [read $fd]
+	}	
+}
+
+proc run_macro_cmd {str} {
+	global RESULT
+	set ::snmp::cmd_str $str
+	$RESULT tag remove match 1.0 end
+	$RESULT tag remove mark  1.0 end
+	if {$::result_clear} {$RESULT delete 1.0 end}	
+	log_result "==== Start ====\n"
+	update
+	set line_num 1
+	set run_str $str
+	if {$::replace_macro_addr} {
+		if {[lindex $str 0]=="snmp_set"} {
+			set strlst [lreplace $str end-3 end-3 "\[::snmp::addr\]"]
+			set ::snmp::cmd [lreplace $str end-3 end-3 [::snmp::addr]]
+		} else {
+			set strlst [lreplace $str end-1 end-1 "\[::snmp::addr\]"]
+			set ::snmp::cmd [lreplace $str end-1 end-1 [::snmp::addr]]
+		}
+		set run_str [join $strlst]
 	}
+	
+	if [catch {eval $run_str} ret] {
+		log_result "Error: [string trim $ret]\n" err
+		return -code error
+	} else {
+		foreach line $ret {
+			log_result "$line_num. $line\n"
+			incr line_num 
+		}
+	}	
+	log_result "==== Finish ====\n"
 }
 

@@ -100,6 +100,7 @@ bind $TREE <ButtonRelease-3> {
 
 $TREE notify bind $TREE <Selection> {
 	if {%S!=""} {
+		$TREE see %S -center x
 		set name [get_node_data %S name]
 		set oid [get_node_data %S oid]
 		set type [get_node_data %S type]
@@ -116,9 +117,9 @@ $TREE notify bind $TREE <Selection> {
 		set ::snmp::ACCESS $access
 		set ::snmp::selection %S	
 		set ::snmp::TYPE $::snmp::type_table($type)
-		#puts ::snmp::OID=$::snmp::OID
 		#set ::snmp::cmd "$::snmp::app [::snmp::cmdopt] [::snmp::outfmt] $::snmp::agentip  $::snmp::OID"
 		set ::snmp::cmd "$::snmp::app [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr] $::snmp::OID"
+		
 	}
 }
 
@@ -318,25 +319,38 @@ bind $LF_AGENT.en_ip <KeyRelease> {
 	set ::snmp::cmd "$::snmp::app [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr] $::snmp::OID"
 }
 
-for {set i 1} {$i<=8} {incr i} {
+for {set i 1} {$i<=12} {incr i} {
 	bind . <F$i> "
 		ttk::button::activate $TOOL_BAR.bt_quick$i
 	"
 }
 
-for {set i 1} {$i<=8} {incr i} {
+for {set i 1} {$i<=12} {incr i} {
 	bind  $TOOL_BAR.bt_quick$i <Button-3> "
 		setup_quick_button $i
-		puts i=$i
 	"
 }
 
+for {set i 1} {$i<=12} {incr i} {
+	bind  $TOOL_BAR.bt_quick$i <Control-Button-3> "
+		clear_quick_button $i
+	"
+}
+
+
 proc setup_quick_button {ind} {
 	global TOOL_BAR confPath
-	#$TOOL_BAR.bt_quick$ind configure -text haha
 	set macro [tk_getOpenFile -initialdir $confPath/macro]
 	if {$macro!=""} {
-		$TOOL_BAR.bt_quick$ind configure -text [lindex [file split  $macro] end]
+		$TOOL_BAR.bt_quick$ind configure -text "[lindex [file split  $macro] end](F$ind)"
 		$TOOL_BAR.bt_quick$ind configure -command "run_macro $macro"
 	}	
 }
+
+proc clear_quick_button {ind} {
+	global TOOL_BAR confPath
+	$TOOL_BAR.bt_quick$ind configure -text "F$ind"
+	$TOOL_BAR.bt_quick$ind configure -command ""
+
+}
+
