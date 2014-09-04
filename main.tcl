@@ -187,19 +187,25 @@ menu .mbar.result -tearoff 0
 
 
 # Macro menu
+set ::start_macro_record 0
+set ::macro_cmds ""
+
 menu .mbar.macro -tearoff 0
 .mbar.macro add cascade -label "Record"  -menu .mbar.macro.record
 menu .mbar.macro.record -tearoff 0
-.mbar.macro.record add command -label "Start" -command {
+.mbar.macro.record add command -label "Start" -command {	
 	.mbar.macro.record entryconfigure 0 -state disable
 	.mbar.macro.record entryconfigure 1 -state normal
+	set ::start_macro_record 1
+	set ::macro_cmds ""
 }
 .mbar.macro.record add command -label "Stop"  -command {
 	.mbar.macro.record entryconfigure 0 -state normal
 	.mbar.macro.record entryconfigure 1 -state disable
+	macro_gui
+	set ::start_macro_record 0	
 } -state disable
-# -variable ::macro::start -command {puts 123} -state disable
-.mbar.macro add command -label "Run Macro"
+.mbar.macro add command -label "Run Macro" -command {run_macro}
 
 
 
@@ -230,9 +236,17 @@ grid rowconfigure . 1 -weight 1
 ## Tool bar
 ttk::button  $TOOL_BAR.bt_protocol -text "SNMP Setting" -command snmp_protocol
 ttk::button  $TOOL_BAR.bt_mibtree  -text "MIB Setting"  -command mib_setup
-#ttk::label   $TOOL_BAR.lb_status   -text "●" -font {"TkDefaultfont" 16 bold} -foreground #00ff00
+ttk::separator $TOOL_BAR.sep -orient vertical
+for {set i 1} {$i<=8} {incr i} {
+	ttk::button  $TOOL_BAR.bt_quick$i  -text "$i"  -command "puts ==$i"
+}
+
 pack  $TOOL_BAR.bt_protocol -padx 5 -pady 5 -anchor w -side left
 pack  $TOOL_BAR.bt_mibtree  -padx 5 -pady 5 -anchor w -side left
+pack  $TOOL_BAR.sep -fill y -padx 5 -pady 5 -anchor w -side left
+for {set i 1} {$i<=8} {incr i} {
+	pack  $TOOL_BAR.bt_quick$i -padx 5 -pady 5 -anchor w -side left
+}
 #pack  $TOOL_BAR.lb_status   -padx 10 -pady 0 -anchor e -side right
 ## end tool bar
 
@@ -312,25 +326,7 @@ pack $LF_AGENT.ckb_ip $LF_AGENT.en_ip -side left -fill both -padx 5
 
 ttk::entry $LF_CMD.en_cmd -textvariable ::snmp::cmd 
 set ::snmp::cmd ""
-ttk::button $LF_CMD.bt_cmd -text "Run" -command {
-	if {$::result_clear} {$RESULT delete 1.0 end}
-	log_result "\n==== Start ====\n"
-	update
-	$RESULT tag remove match 1.0 end
-	$RESULT tag remove mark  1.0 end
-
-	#set temp_cmd [regsub -all {\[} $::snmp::cmd \\\[]
-	#set temp_cmd [regsub -all {\]} $temp_cmd \\\]]
-	#puts temp_cmd=$temp_cmd
-	if [catch {eval $::snmp::cmd} ret] {
-		log_result "err: $ret\n" err
-	} else {
-		foreach line $ret {
-			log_result "$line\n"
-		}
-	}
-	log_result "==== Finish ====\n"
-}
+ttk::button $LF_CMD.bt_cmd -text "Run" -command {run_cmd $::snmp::cmd}
 
 pack $LF_CMD.en_cmd -fill both -side left -expand 1 -padx 5 
 pack $LF_CMD.bt_cmd -side right

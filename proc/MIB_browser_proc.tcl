@@ -759,9 +759,9 @@ proc ::snmp::cmdopt {{rw r}} {
 	
 	if {$::snmp::ver != 3} {
 		if {$rw=="r"} {
-			set opt "$general_op  -c$::snmp::comm_r"
+			set opt "$general_op -c$::snmp::comm_r"
 		} else {
-			set opt "$general_op  -c$::snmp::comm_w"
+			set opt "$general_op -c$::snmp::comm_w"
 		}		
 		return "$opt"
 	}
@@ -1019,8 +1019,13 @@ proc run_cmd {str} {
 	log_result "==== Start ====\n"
 	update
 	set line_num 1
+	if {$::start_macro_record} {
+		append ::macro_cmds $str\n
+	}
+	
 	if [catch {eval $str} ret] {
 		log_result "Error: [string trim $ret]\n" err
+		return -code error
 	} else {
 		foreach line $ret {
 			log_result "$line_num. $line\n"
@@ -1028,5 +1033,70 @@ proc run_cmd {str} {
 		}
 	}	
 	log_result "==== Finish ====\n"
+}
+
+
+proc macro_gui {} {
+	catch {destroy .macro}
+	set p [toplevel .macro]
+	bind $p <Escape> {destroy .macro}
+	wm title $p "Macro"
+	wm resizable $p 0 0 
+	wm transient $p [winfo toplevel [winfo parent $p]]
+
+	text $p.text -wrap none  -font $::result_font 
+	set SH [::ttk::scrollbar $p.sh -orient horizontal -command [list $p.text xview]]
+	set SV [::ttk::scrollbar $p.sv -orient vertical   -command [list $p.text yview]]
+	$p.text configure -yscrollcommand [list $SV set]
+	$p.text configure -xscrollcommand [list $SH set]
+	
+	ttk::frame $p.fr
+	ttk::button $p.fr.bt1 -text Save   -command {
+		set macrofile [tk_getSaveFile -initialdir $confPath/macro]
+		if {$macrofile != ""} {
+			set fd [open $macrofile w+]
+			puts -nonewline $fd [.macro.text get 1.0 end]
+			close $fd									
+		}		
+	}
+	ttk::button $p.fr.bt2 -text Cancel -command {destroy .macro}
+	
+	grid $p.text $SV -sticky "news"
+	grid $SH -columnspan 2 -sticky "we"
+	grid columnconfigure $p 0 -weight 1
+	grid rowconfigure $p 0 -weight 1
+	grid $p.fr -columnspan 2 
+	grid $p.fr.bt1 -row 0 -column 1 -padx 10 -pady 5 
+	grid $p.fr.bt2 -row 0 -column 0 -padx 10 -pady 5
+	$p.text insert end $::macro_cmds ""	
+	::tk::PlaceWindow $p 
+	grab $p
+}
+
+proc run_macro {{filename ""}} {
+	global confPath RESULT
+	if {$filename!=""} {
+		set macro $filename
+	} else {
+		set macro [tk_getOpenFile -initialdir $confPath/macro]
+	}	
+	set fd [open $macro r]
+	if {$macro != ""} {
+		set line_num 1
+		while {![eof $fd]} {
+			if {[gets $fd line]>0} {
+				if [catch {run_cmd $line} ret] {
+					log_result "Error in line $line_num: $line \n$ret\n" err
+					break
+				} else {
+					log_result "$ret\n"
+				}
+			}
+			incr line_num
+		}
+		close $fd
+#		set fd [open $macro r]
+#		eval [read $fd]
+	}
 }
 

@@ -318,4 +318,25 @@ bind $LF_AGENT.en_ip <KeyRelease> {
 	set ::snmp::cmd "$::snmp::app [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr] $::snmp::OID"
 }
 
+for {set i 1} {$i<=8} {incr i} {
+	bind . <F$i> "
+		ttk::button::activate $TOOL_BAR.bt_quick$i
+	"
+}
 
+for {set i 1} {$i<=8} {incr i} {
+	bind  $TOOL_BAR.bt_quick$i <Button-3> "
+		setup_quick_button $i
+		puts i=$i
+	"
+}
+
+proc setup_quick_button {ind} {
+	global TOOL_BAR confPath
+	#$TOOL_BAR.bt_quick$ind configure -text haha
+	set macro [tk_getOpenFile -initialdir $confPath/macro]
+	if {$macro!=""} {
+		$TOOL_BAR.bt_quick$ind configure -text [lindex [file split  $macro] end]
+		$TOOL_BAR.bt_quick$ind configure -command "run_macro $macro"
+	}	
+}
