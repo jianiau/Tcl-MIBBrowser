@@ -8,7 +8,7 @@ set confPath [file join $env(HOME) .TCl-MIBBrowser]
 
 file mkdir [file join $confPath profile]
 file mkdir [file join $confPath dumpfile]
-
+file mkdir [file join $confPath macro]
 
 #if [file exist $confPath]
 #if {[namespace exists ::vfs]} {
@@ -27,6 +27,7 @@ package require sha1
 package require ip
 
 namespace eval ::snmp {}
+namespace eval ::macro {}
 source [file join $appPath proc PBKDF2.tcl]
 source [file join $appPath proc MIB_browser_proc.tcl]
 
@@ -62,7 +63,7 @@ set ::snmp::DHKey ""
 set ::snmp::DHInit 0
 set ::snmp::TREE_DSP_TYPE 2
 # search init
-set ::snmp::searchname	"sysDescr"
+set ::snmp::searchname	""
 set ::search_fullmatch 0
 set ::search_case 0
 set ::direction down
@@ -103,7 +104,7 @@ wm protocol . WM_DELETE_WINDOW {
 		set inifd [::ini::open $confPath/config.ini w+]
 		foreach key {timeout retry MIBDIRS output useroutput IPv6 agentip ver comm_r comm_w usm level \
 					authtype authpw authkey authkeytype\
-					privtype privpw privkey  privkeytype searchname useDH DHKey } {
+					privtype privpw privkey  privkeytype useDH DHKey } {
 			::ini::set $inifd snmp $key [set ::snmp::$key]
 		}
 		foreach key {tree_font info_font result_font show_mib_info result_clear} {
@@ -146,6 +147,7 @@ menu .mbar -type menubar
 .mbar add cascade -label "Option" -menu .mbar.option
 .mbar add cascade -label "View" -menu .mbar.view
 .mbar add cascade -label "Result" -menu .mbar.result
+.mbar add cascade -label "Macro" -menu .mbar.macro
 
 # option menu
 menu .mbar.option -tearoff 0
@@ -182,6 +184,24 @@ menu .mbar.result -tearoff 0
 .mbar.result add command -label "Copy" -command {tk_textCopy $RESULT}
 .mbar.result add separator
 .mbar.result add command -label "Save" -command {save_result}
+
+
+# Macro menu
+menu .mbar.macro -tearoff 0
+.mbar.macro add cascade -label "Record"  -menu .mbar.macro.record
+menu .mbar.macro.record -tearoff 0
+.mbar.macro.record add command -label "Start" -command {
+	.mbar.macro.record entryconfigure 0 -state disable
+	.mbar.macro.record entryconfigure 1 -state normal
+}
+.mbar.macro.record add command -label "Stop"  -command {
+	.mbar.macro.record entryconfigure 0 -state normal
+	.mbar.macro.record entryconfigure 1 -state disable
+} -state disable
+# -variable ::macro::start -command {puts 123} -state disable
+.mbar.macro add command -label "Run Macro"
+
+
 
 .mbar add cascade -label "Help"
 . configure -menu .mbar
@@ -328,7 +348,7 @@ ttk::radiobutton $LF_SEARCH.rb_up   -text "Up"   -value up   -variable ::directi
 ttk::radiobutton $LF_SEARCH.rb_down -text "Down" -value down -variable ::direction 
 #ttk::button      $LF_SEARCH.bt_search -text "Go" -command {search_cmd}
 
-set ::snmp::searchname_buf ""
+set ::snmp::searchname_buf $::snmp::searchname
 
 proc check_search_input {key} {
 	if {[regexp {[\.0-9a-zA-Z]} $key]} {

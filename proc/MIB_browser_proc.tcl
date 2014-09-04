@@ -1,10 +1,10 @@
 
 proc Sleep {msec} {
-	set aa 0
+	set _ww 0
 	after $msec {
-		set aa 1
+		set _ww 1
 	}
-	vwait aa
+	vwait _ww
 }
 proc log_result {msg {tag ""}} {
 	global RESULT
@@ -78,19 +78,17 @@ proc goto_next_match {} {
 				return
 			}
 		}
-		puts "down can not find"
 	} else {
 		set len [llength $::results]
 		for {set i 0} {$i<$len} {incr i} {
 			lappend re_list [lindex $::results end-$i]
 		}
 		foreach temp $re_list {
-				if {$temp<$::snmp::selection} {
-					goto_node $temp
-					return
-				}
+			if {$temp<$::snmp::selection} {
+				goto_node $temp
+				return
 			}
-		puts "up can not find"
+		}
 	}
 }
 
@@ -370,11 +368,6 @@ proc mib_setup {} {
 	ttk::button       $p.lf1.bt_dir -text "set..." -command {
 		set newdir [tk_chooseDirectory -mustexist 1 -initialdir $::temp(MIBDIRS) -parent .mib_setup -title "Select MIB dir and re-build mib tree"]
 		if {$newdir!=""} {
-			#catch {$TREE item delete 1}
-			#unset ::snmp::namelist			
-			#snmp_loadmib -mall -M$newdir
-			#snmp_translate -TZ
-			#catch {buildtree}
 			if {$::temp(MIBDIRS) != $newdir} {
 				set ::temp(MIBDIRS) $newdir
 				set ::temp(changedir) 1
@@ -399,17 +392,14 @@ proc mib_setup {} {
 			catch {$TREE item delete 1}
 			unset ::snmp::namelist			
 			snmp_loadmib -mall -M$newdir
-			snmp_translate -TZ
+			snmp_translate -TZ -f[file join $confPath translate_output.txt]
 			catch {buildtree}
 		}
 		
 		destroy .mib_setup
 	}
 	ttk::button $p.lf_end.bt_cancel -text Cancel -command {destroy .mib_setup}
-	
-	
-	
-	
+				
 	grid $p.lf1.lb_dir -sticky w  -row 0 -column 0 -padx 5
 	grid $p.lf1.en_dir -sticky we -row 0 -column 1 -padx 5
 	grid $p.lf1.bt_dir -sticky we -row 0 -column 2 -padx 5
@@ -532,24 +522,10 @@ proc snmpget_gui {{method get}} {
 	}
 
 	if { [llength $index_list] == 1} {
-		switch $method {
-			"dump" {
-				set get_oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
-				snmpdump_cmd $get_oid
-				return
-			}
-			"upload" {
-				set set_oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
-				snmpupload_cmd $set_oid
-				return
-			}
-			"get" {
+		set oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
+		run_cmd "snmp_$method [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr] $oid"
+		return
 
-				set get_oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
-				snmpget_cmd $get_oid
-				return	
-			}
-		}
 	}
 	
 	if {[llength $index_list]==0} {
@@ -563,19 +539,13 @@ proc snmpget_gui {{method get}} {
 	wm transient $p [winfo toplevel [winfo parent $p]]
 	ttk::combobox .snmpget.cb -value $index_list -state readonly
 
-	switch $method {
-		"dump" {
-			ttk::button   .snmpget.bt -text "Dump"   -command {snmpdump_cmd $::snmp::OID.[.snmpget.cb get] ; destroy .snmpget}
-		}
-		"get" {
-			ttk::button   .snmpget.bt -text "Get"    -command {snmpget_cmd $::snmp::OID.[.snmpget.cb get]; destroy .snmpget}
-		}
-		"upload" {
-
-			ttk::button   .snmpget.bt -text "Upload" -command {snmpupload_cmd $::snmp::OID.[.snmpget.cb get]; destroy .snmpget}
-		}
+	set ::temp_method $method
+	ttk::button .snmpget.bt -text "$method" -command {
+		run_cmd "snmp_[set ::temp_method] [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr] $::snmp::OID.[.snmpget.cb get]"
+		unset ::temp_method
+		destroy .snmpget
 	}
-
+	
 	.snmpget.cb current 0	
 	grid .snmpget.cb -row 0 -column 0 -sticky we -padx 5 -pady 5
 	grid .snmpget.bt -row 1 -column 0 -sticky we -padx 5 -pady 5
@@ -599,26 +569,13 @@ proc get_index {} {
 	}
 }
 
-proc snmpget_cmd {oid} {
-	global RESULT
-	if {$::result_clear} {$RESULT delete 1.0 end}
-	set ::snmp::cmd "snmp_get [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $oid"
-	log_result "\n==== Start ====\n"
-	if [catch {eval snmp_get [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $oid } ret] {
-		log_result "Err: $ret \n"	
-	} else {
-		log_result "1.  [lindex $ret 0]\n"
-	}
-	log_result "==== Finish ====\n"
-}
 
-proc snmpdump_cmd {oid} {
+
+proc snmp_dump {args} {
 	global RESULT confPath
-	if {$::result_clear} {$RESULT delete 1.0 end}
-	#set ::snmp::cmd "snmp_get [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $oid"
-	log_result "\n==== Start ====\n"
+	set oid [lindex $args end]
 	if [catch {eval snmp_get [::snmp::cmdopt] -Oqvx -IJ  [::snmp::addr]  $oid } ret] {
-		log_result "*************Err: $ret \n"	
+		log_result "Err: $ret \n" err
 	} else {
 		set hexdata [join [split [lindex $ret 0] " \n\""] ""]
 		set dumpfile [tk_getSaveFile -initialdir $confPath/dumpfile]
@@ -628,18 +585,14 @@ proc snmpdump_cmd {oid} {
 			puts -nonewline $fd [binary format H* $hexdata]
 			close $fd
 		}
-		log_result "Dump data to $dumpfile\n"
-		
+		log_result "Dump data to $dumpfile\n"		
 	}
-	log_result "==== Finish ====\n"
 }
 
 
-proc snmpupload_cmd {oid} {
-	global RESULT confPath
-	if {$::result_clear} {$RESULT delete 1.0 end}
-
-	log_result "\n==== Start ====\n"
+proc snmp_upload {args} {
+	global RESULT confPath	
+	set oid [lindex $args end]
 	set loadfd [tk_getOpenFile -initialdir $confPath/dumpfile]
 	if {$loadfd==""} {return}
 	set fd [open $loadfd r]
@@ -647,26 +600,12 @@ proc snmpupload_cmd {oid} {
 	binary scan [read $fd] H* hexdata
 	
 	if [catch {eval snmp_set [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $oid x $hexdata} ret] {
-		log_result "*************Err: $ret \n"	
+		log_result "Error: $ret \n"	err
 	} else {
 		log_result "Upload $loadfd\n"		
 	}
-	log_result "==== Finish ====\n"
 }
 
-proc snmpset_cmd {oid} {
-	global RESULT
-	if {$::result_clear} {$RESULT delete 1.0 end}
-	set ::snmp::cmd "snmp_set [::snmp::cmdopt w] [::snmp::outfmt] [::snmp::addr]  $oid $::snmp::TYPE $::snmp::setvalue"
-	log_result "\n==== Start ====\n"
-	if [catch {eval snmp_set [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $oid $::snmp::TYPE $::snmp::setvalue } ret] {
-		log_result "Error: [string trim $ret]\n" err
-	} else {
-		log_result "1.  [lindex $ret 0]\n"
-	}
-	log_result "==== Finish ====\n"
-	
-}
 
 proc snmpset_gui {} {	
 	global RESULT
@@ -712,7 +651,8 @@ proc snmpset_gui {} {
 		set ::snmp::setvalue [lindex [eval snmp_get [::snmp::cmdopt]  -OqvU -IJ [::snmp::addr]  $oid] 0]
 	}
 	ttk::button $w.lf3.bt2_conf -text "Set" -command {
-		snmpset_cmd $oid
+		#snmpset_cmd $oid
+		run_cmd "snmp_set [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr] $oid $::snmp::TYPE $::snmp::setvalue"
 		set ::snmp::OID $::temp(backupOID)
 		destroy .snmpset
 	}
@@ -765,6 +705,8 @@ proc snmpset_gui {} {
 
 }
 
+
+
 proc ::snmp::snmpdump {} {
 	global RESULT
 	if {$::snmp::OID==""} {return}
@@ -784,57 +726,23 @@ proc ::snmp::snmpupload {} {
 
 
 proc ::snmp::snmpwalk {} {
-	global RESULT
 	if {$::snmp::OID==""} {return}
-	$RESULT tag remove match 1.0 end
-	$RESULT tag remove mark  1.0 end
-	if {$::result_clear} {$RESULT delete 1.0 end}
-	set ::snmp::cmd "snmp_walk [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID"
-	log_result "\n==== Start ====\n"
-	update
-	if [catch {eval snmp_walk [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID} ret] {
-		log_result "Error: [string trim $ret]\n" err
-	} else {
-		set item 1	
-		foreach val $ret {
-			log_result "$item.  $val\n"
-			incr item
-		}
-	}
-	log_result "==== Finish ====\n"
+	run_cmd "snmp_walk [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID"
 }
 
 proc ::snmp::snmpset {} {
-	global RESULT
 	if {$::snmp::OID==""} {return}
-	$RESULT tag remove match 1.0 end
-	$RESULT tag remove mark  1.0 end
 	snmpset_gui
 }
 
 proc ::snmp::snmpget {} {
-	global RESULT
 	if {$::snmp::OID==""} {return}
-	$RESULT tag remove match 1.0 end
-	$RESULT tag remove mark  1.0 end
 	snmpget_gui
 }
 
 proc ::snmp::snmpgetnext {} {
-	global RESULT
 	if {$::snmp::OID==""} {return}
-	$RESULT tag remove match 1.0 end
-	$RESULT tag remove mark  1.0 end
-	if {$::result_clear} {$RESULT delete 1.0 end}
-	set ::snmp::cmd "snmp_getnext [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID"	
-	log_result "\n==== Start ====\n"
-	update
-	if [catch {eval snmp_getnext [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID} ret] {
-		log_result "Error: [string trim $ret]\n" err
-	} else {
-		log_result "1.  [lindex $ret 0]\n"
-	}	
-	log_result "==== Finish ====\n"
+	run_cmd "snmp_getnext [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID"
 }
 
 proc ::snmp::outfmt {} {
@@ -1099,5 +1007,26 @@ proc load_bookmark {} {
 	} else {
 		array set ::BOOKMARK ""
 	}		
+}
+
+
+proc run_cmd {str} {
+	global RESULT
+	$RESULT tag remove match 1.0 end
+	$RESULT tag remove mark  1.0 end
+	if {$::result_clear} {$RESULT delete 1.0 end}
+	set ::snmp::cmd $str
+	log_result "==== Start ====\n"
+	update
+	set line_num 1
+	if [catch {eval $str} ret] {
+		log_result "Error: [string trim $ret]\n" err
+	} else {
+		foreach line $ret {
+			log_result "$line_num. $line\n"
+			incr line_num 
+		}
+	}	
+	log_result "==== Finish ====\n"
 }
 

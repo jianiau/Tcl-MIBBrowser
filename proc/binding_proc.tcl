@@ -44,7 +44,7 @@ bind $TREE <ButtonRelease-3> {
 			catch {$TREE item delete 1}		
 			unset ::snmp::namelist						
 			snmp_loadmib -mall -M$::snmp::MIBDIRS
-			snmp_translate -TZ
+			snmp_translate -TZ -f[file join $confPath translate_output.txt]
 			catch {buildtree}									
 		}
 	} else {
