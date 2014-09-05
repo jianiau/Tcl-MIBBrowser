@@ -315,24 +315,69 @@ bind $TREE <bracketright> {
 	goto_next_bm
 }
 
+
+bind TreeCtrl <KeyPress-Prior> {}
+bind TreeCtrl <KeyPress-Next> {}
+bind TreeCtrl <KeyPress-Home> {}
+bind TreeCtrl <KeyPress-End> {}
+
+bind $TREE <KeyPress-Prior> {
+    %W yview scroll -1 pages
+    if {[%W item id {nearest 0 0}] ne ""} {
+		%W activate {nearest 0 0}
+		TreeCtrl::SetActiveItem %W [%W item id active]
+    }
+}
+bind $TREE <KeyPress-Next> {
+    %W yview scroll 1 pages
+    if {[%W item id {nearest 0 0}] ne ""} {
+		if {[lindex [%W yview] 1]=="1.0"} {
+			%W activate {nearest 0 9999}
+		} else {
+			%W activate {nearest 0 0}
+		}
+		TreeCtrl::SetActiveItem %W [%W item id active]
+    }
+}
+
+bind $TREE <KeyPress-Home> {
+    %W yview moveto 0
+    %W activate {nearest 0 0}
+    TreeCtrl::SetActiveItem %W [%W item id active]
+}
+bind $TREE <KeyPress-End> {
+    %W yview moveto 1
+    %W activate {nearest 0 9999}
+    TreeCtrl::SetActiveItem %W [%W item id active] 
+}
+
+
+
+
 bind $LF_AGENT.en_ip <KeyRelease> {
 	set ::snmp::cmd "$::snmp::app [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr] $::snmp::OID"
 }
 
+set ::macro_is_running 0
 for {set i 1} {$i<=12} {incr i} {
-	bind . <F$i> "
-		ttk::button::activate $TOOL_BAR.bt_quick$i
-	"
+	bind . <KeyRelease-F$i> {
+		if { (!$::macro_is_running) && ([$TOOL_BAR.bt_quick%K cget -command]!="") } {			
+			set ::macro_is_running 1
+			ttk::button::activate $TOOL_BAR.bt_quick%K
+		}
+	}
 }
 
+
 for {set i 1} {$i<=12} {incr i} {
-	bind  $TOOL_BAR.bt_quick$i <Button-3> "
+	bind  $TOOL_BAR.bt_quickF$i <Button-3> "
 		setup_quick_button $i
 	"
 }
 
+
 for {set i 1} {$i<=12} {incr i} {
-	bind  $TOOL_BAR.bt_quick$i <Control-Button-3> "
+	bind  $TOOL_BAR.bt_quickF$i <Control-Button-3> "
 		clear_quick_button $i
 	"
 }
@@ -342,15 +387,21 @@ proc setup_quick_button {ind} {
 	global TOOL_BAR confPath
 	set macro [tk_getOpenFile -initialdir $confPath/macro]
 	if {$macro!=""} {
-		$TOOL_BAR.bt_quick$ind configure -text "[lindex [file split  $macro] end](F$ind)"
-		$TOOL_BAR.bt_quick$ind configure -command "run_macro $macro"
+		$TOOL_BAR.bt_quickF$ind configure -text "[lindex [file split  $macro] end](F$ind)"
+		$TOOL_BAR.bt_quickF$ind configure -command "run_macro $macro"
 	}	
 }
 
 proc clear_quick_button {ind} {
 	global TOOL_BAR confPath
-	$TOOL_BAR.bt_quick$ind configure -text "F$ind"
-	$TOOL_BAR.bt_quick$ind configure -command ""
+	$TOOL_BAR.bt_quickF$ind configure -text "F$ind"
+	$TOOL_BAR.bt_quickF$ind configure -command ""
 
+}
+
+
+
+bind . <Key> {
+	puts "Tes: key is %K"
 }
 

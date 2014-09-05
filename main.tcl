@@ -78,8 +78,8 @@ set ::show_mib_info 1
 set ::result_clear 1
 
 for {set i 1} {$i<=12} {incr i} {
-	set ::quick(F$i,name) "F$i"
-	set ::quick(F$i,cmd) ""
+	set ::quick(F$i.name) "F$i"
+	set ::quick(F$i.cmd) ""
 }
 # update value via inifile
 
@@ -121,8 +121,8 @@ wm protocol . WM_DELETE_WINDOW {
 			::ini::set $inifd global $key [set ::$key]
 		}
 		for {set i 1} {$i<=12} {incr i} {
-			::ini::set $inifd quick F$i.name [$TOOL_BAR.bt_quick$i cget -text]
-			::ini::set $inifd quick F$i.cmd [$TOOL_BAR.bt_quick$i cget -command]
+			::ini::set $inifd quick F$i.name [$TOOL_BAR.bt_quickF$i cget -text]
+			::ini::set $inifd quick F$i.cmd  [$TOOL_BAR.bt_quickF$i cget -command]
 		}
 		::ini::commit $inifd
 		::ini::close $inifd
@@ -251,7 +251,7 @@ ttk::button  $TOOL_BAR.bt_protocol -text "SNMP Setting" -command snmp_protocol
 ttk::button  $TOOL_BAR.bt_mibtree  -text "MIB Setting"  -command mib_setup
 ttk::separator $TOOL_BAR.sep -orient vertical
 for {set i 1} {$i<=12} {incr i} {
-	ttk::button  $TOOL_BAR.bt_quick$i  -text $::quick(F$i.name)  -command $::quick(F$i.cmd)
+	ttk::button  $TOOL_BAR.bt_quickF$i  -text $::quick(F$i.name)  -command $::quick(F$i.cmd)
 }
 
 
@@ -260,7 +260,7 @@ pack  $TOOL_BAR.bt_protocol -padx 5 -pady 5 -anchor w -side left
 pack  $TOOL_BAR.bt_mibtree  -padx 5 -pady 5 -anchor w -side left
 pack  $TOOL_BAR.sep -fill y -padx 5 -pady 5 -anchor w -side left
 for {set i 1} {$i<=12} {incr i} {
-	pack  $TOOL_BAR.bt_quick$i -ipadx 5 -padx 5 -pady 5 -anchor w -side left
+	pack  $TOOL_BAR.bt_quickF$i -ipadx 5 -padx 5 -pady 5 -anchor w -side left
 }
 #pack  $TOOL_BAR.lb_status   -padx 10 -pady 0 -anchor e -side right
 ## end tool bar

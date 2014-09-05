@@ -972,12 +972,18 @@ proc goto_prev_bm {} {
 	global TREE
 	set now [$TREE selection get]
 	set ind 0
+	set break 0
 	foreach new $::snmp::bookmark_list {
-		if { ($new >= $now) && $ind} {
+		if { ($new >= $now)} {
+			if {!$ind} {set break 1 ;break}
 			goto_node [lindex $::snmp::bookmark_list [expr $ind-1]]
+			set break 1
 			break
 		}
 		incr ind
+	}
+	if {$ind && !$break} {
+		goto_node [lindex $::snmp::bookmark_list end]
 	}
 }
 
@@ -1098,6 +1104,7 @@ proc run_macro {{filename ""}} {
 			incr line_num
 		}
 		close $fd
+		set ::macro_is_running 0
 	}	
 }
 
