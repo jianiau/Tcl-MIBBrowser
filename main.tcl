@@ -77,7 +77,8 @@ set ::result_font {"Droid Sans" 10 normal}
 set ::show_mib_info 1
 set ::result_clear 1
 
-for {set i 1} {$i<=12} {incr i} {
+set ::function_key_num 8
+for {set i 1} {$i<=$::function_key_num} {incr i} {
 	set ::quick(F$i.name) "F$i"
 	set ::quick(F$i.cmd) ""
 }
@@ -120,7 +121,7 @@ wm protocol . WM_DELETE_WINDOW {
 		foreach key {tree_font info_font result_font show_mib_info result_clear replace_macro_addr} {
 			::ini::set $inifd global $key [set ::$key]
 		}
-		for {set i 1} {$i<=12} {incr i} {
+		for {set i 1} {$i<=$::function_key_num} {incr i} {
 			::ini::set $inifd quick F$i.name [$TOOL_BAR.bt_quickF$i cget -text]
 			::ini::set $inifd quick F$i.cmd  [$TOOL_BAR.bt_quickF$i cget -command]
 		}
@@ -250,7 +251,7 @@ grid rowconfigure . 1 -weight 1
 ttk::button  $TOOL_BAR.bt_protocol -text "SNMP Setting" -command snmp_protocol
 ttk::button  $TOOL_BAR.bt_mibtree  -text "MIB Setting"  -command mib_setup
 ttk::separator $TOOL_BAR.sep -orient vertical
-for {set i 1} {$i<=12} {incr i} {
+for {set i 1} {$i<=$::function_key_num} {incr i} {
 	ttk::button  $TOOL_BAR.bt_quickF$i  -text $::quick(F$i.name)  -command $::quick(F$i.cmd)
 }
 
@@ -259,7 +260,7 @@ for {set i 1} {$i<=12} {incr i} {
 pack  $TOOL_BAR.bt_protocol -padx 5 -pady 5 -anchor w -side left
 pack  $TOOL_BAR.bt_mibtree  -padx 5 -pady 5 -anchor w -side left
 pack  $TOOL_BAR.sep -fill y -padx 5 -pady 5 -anchor w -side left
-for {set i 1} {$i<=12} {incr i} {
+for {set i 1} {$i<=$::function_key_num} {incr i} {
 	pack  $TOOL_BAR.bt_quickF$i -ipadx 5 -padx 5 -pady 5 -anchor w -side left
 }
 #pack  $TOOL_BAR.lb_status   -padx 10 -pady 0 -anchor e -side right
@@ -362,9 +363,11 @@ ttk::radiobutton $LF_SEARCH.rb_down -text "Down" -value down -variable ::directi
 set ::snmp::searchname_buf $::snmp::searchname
 
 proc check_search_input {key} {
+	#puts key=$key
+	#return 1
 	if {[regexp {[\.0-9a-zA-Z]} $key]} {
 		return 1
-	}
+	}	
 	return 0
 }
 
@@ -439,6 +442,7 @@ focus $TREE
 
 
 $RESULT tag configure err -foreground red
+$RESULT tag configure blue -foreground blue
 $RESULT tag configure match -background yellow
 $RESULT tag configure mark -background orange
 $RESULT tag raise mark match

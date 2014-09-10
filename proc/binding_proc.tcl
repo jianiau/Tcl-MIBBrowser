@@ -183,7 +183,7 @@ bind $TREE <KeyRelease-Control_L> {
 
 ## TREE search
 
-bind $LF_SEARCH.en_search <KeyRelease> {
+bind $LF_SEARCH.en_search <Return> {
 	# search patten change
 	if {![string eq $::snmp::searchname_buf $::snmp::searchname]} {
 		set ::snmp::searchname_buf $::snmp::searchname
@@ -192,6 +192,8 @@ bind $LF_SEARCH.en_search <KeyRelease> {
 		if {[ lsearch $::results [$TREE selection get]]<0} {
 			goto_next_match
 		}
+	} else {
+		goto_next_match
 	} 	
 }
 
@@ -219,9 +221,9 @@ bind $LF_SEARCH.en_search <Escape> {
 	focus $TREE
 }
 
-bind $LF_SEARCH.en_search <Return> {
-	goto_next_match
-}
+#bind $LF_SEARCH.en_search <Return> {
+#	goto_next_match
+#}
 
 bind $LF_SEARCH.en_search <Control-w> {
 	::snmp::snmpwalk
@@ -359,7 +361,7 @@ bind $LF_AGENT.en_ip <KeyRelease> {
 }
 
 set ::macro_is_running 0
-for {set i 1} {$i<=12} {incr i} {
+for {set i 1} {$i<=$::function_key_num} {incr i} {
 	bind . <KeyRelease-F$i> {
 		if { (!$::macro_is_running) && ([$TOOL_BAR.bt_quick%K cget -command]!="") } {			
 			set ::macro_is_running 1
@@ -369,14 +371,14 @@ for {set i 1} {$i<=12} {incr i} {
 }
 
 
-for {set i 1} {$i<=12} {incr i} {
+for {set i 1} {$i<=$::function_key_num} {incr i} {
 	bind  $TOOL_BAR.bt_quickF$i <Button-3> "
 		setup_quick_button $i
 	"
 }
 
 
-for {set i 1} {$i<=12} {incr i} {
+for {set i 1} {$i<=$::function_key_num} {incr i} {
 	bind  $TOOL_BAR.bt_quickF$i <Control-Button-3> "
 		clear_quick_button $i
 	"
@@ -387,7 +389,7 @@ proc setup_quick_button {ind} {
 	global TOOL_BAR confPath
 	set macro [tk_getOpenFile -initialdir $confPath/macro]
 	if {$macro!=""} {
-		$TOOL_BAR.bt_quickF$ind configure -text "[lindex [file split  $macro] end](F$ind)"
+		$TOOL_BAR.bt_quickF$ind configure -text "[lindex [file split  $macro] end] (F$ind)"
 		$TOOL_BAR.bt_quickF$ind configure -command "run_macro $macro"
 	}	
 }
@@ -401,7 +403,7 @@ proc clear_quick_button {ind} {
 
 
 
-bind . <Key> {
-	puts "Tes: key is %K"
-}
+#bind . <Key> {
+#	puts "Tes: key is %K"
+#}
 

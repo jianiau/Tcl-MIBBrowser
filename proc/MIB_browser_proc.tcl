@@ -612,6 +612,7 @@ proc snmpset_gui {} {
 	
 	set ::temp(backupOID) $::snmp::OID
     foreach {ret index_list} [get_index] {}
+
 	set oid_list ""
 	if {!$ret} {
     	if {$::result_clear} {$RESULT delete 1.0 end}
@@ -623,6 +624,9 @@ proc snmpset_gui {} {
     		lappend oid_list "[set ::snmp::OID].$ind"
     	}
     }
+	if {$oid_list==""} {
+		lappend oid_list "[set ::snmp::OID].0"
+	}
 	catch {destroy .snmpset}
 	set w [toplevel .snmpset]
 	bind $w <Escape> {set ::snmp::OID $::temp(backupOID) ; destroy .snmpset}
@@ -724,10 +728,49 @@ proc ::snmp::snmpupload {} {
 }
 
 
+proc snmpwalk {args} {
+	puts $args
+	set option [lrange $args 0 end-1] 
+	set oid [lindex $args end]
+	set addr [lindex $args end-1]
+	#puts [eval snmp_getnext $option $oid]
+	#set nextoid [string trim [lindex [split [lindex [eval snmp_getnext [::snmp::cmdopt] -OQn [::snmp::addr]  $::snmp::OID] 0] =] 0] .]
+	#puts nextoid=$nextoid
+	#if oid_ischild  $::snmp::OID nextoid
+
+	while {1} {
+		set nextoid [string trim [lindex [split [lindex [eval snmp_getnext [::snmp::cmdopt] -OQn [::snmp::addr]  $oid] 0] =] 0] .]
+		#puts oid=$oid
+		#puts nextoid=$nextoid
+		if {![oid_ischild [lindex $args end] $nextoid]} {break}
+		log_result [lindex [eval snmp_getnext $option  $oid] 0]\n
+		update
+		set oid $nextoid
+	}
+}
+
+proc oid_ischild {oid1 oid2} {
+	puts "oid1=$oid1"
+	puts "oid2=$oid2"
+	set stra $oid1.
+	puts $stra
+	set leng [string length $stra]	
+	puts leng=$leng
+	set strb [string range $oid2 0 [expr $leng-1]]
+	puts $strb
+	if {[string eq $stra $strb]} {
+		return 1
+	}
+	#if [regexp {^[set oid1]\.} [set oid2] ] {
+	#	return 1
+	#}
+	return 0
+}
 
 proc ::snmp::snmpwalk {} {
 	if {$::snmp::OID==""} {return}
 	run_cmd "snmp_walk [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID"
+	#run_cmd "snmpwalk [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID"
 }
 
 proc ::snmp::snmpset {} {
@@ -1083,19 +1126,23 @@ proc macro_gui {} {
 
 proc run_macro {{filename ""}} {
 	global confPath RESULT
+	if {$::result_clear} {$RESULT delete 1.0 end}
 	if {$filename!=""} {
 		set macro $filename
 	} else {
 		set macro [tk_getOpenFile -initialdir $confPath/macro]
-	}	
+	}
+	set break 0	
 	set fd [open $macro r]
 	if {$macro != ""} {
+		log_result "==== Start Macro====\n"
 		set line_num 1
 		while {![eof $fd]} {
 			if {[gets $fd line]>0} {
 				if [catch {run_macro_cmd $line} ret] {
 					log_result "Error in line $line_num: $line \n[string trim $ret ]" err
 					log_result "==== Finish ====\n"
+					set break 1
 					break
 				} else {
 					log_result "$ret\n"
@@ -1105,7 +1152,10 @@ proc run_macro {{filename ""}} {
 		}
 		close $fd
 		set ::macro_is_running 0
-	}	
+	}
+	if {!$break} {
+		log_result "==== Finish ====\n"
+	}
 }
 
 proc run_macro_cmd {str} {
@@ -1113,31 +1163,33 @@ proc run_macro_cmd {str} {
 	set ::snmp::cmd_str $str
 	$RESULT tag remove match 1.0 end
 	$RESULT tag remove mark  1.0 end
-	if {$::result_clear} {$RESULT delete 1.0 end}	
-	log_result "==== Start ====\n"
+	#if {$::result_clear} {$RESULT delete 1.0 end}
+	#log_result "==== Start ====\n"
 	update
 	set line_num 1
 	set run_str $str
 	if {$::replace_macro_addr} {
 		if {[lindex $str 0]=="snmp_set"} {
 			set strlst [lreplace $str end-3 end-3 "\[::snmp::addr\]"]
-			set ::snmp::cmd [lreplace $str end-3 end-3 [::snmp::addr]]
+			set show_cmd [lreplace $str end-3 end-3 [::snmp::addr]]
 		} else {
 			set strlst [lreplace $str end-1 end-1 "\[::snmp::addr\]"]
-			set ::snmp::cmd [lreplace $str end-1 end-1 [::snmp::addr]]
+			set show_cmd [lreplace $str end-1 end-1 [::snmp::addr]]
 		}
 		set run_str [join $strlst]
 	}
 	
+	log_result "$show_cmd\n" blue
+	update
 	if [catch {eval $run_str} ret] {
 		log_result "Error: [string trim $ret]\n" err
 		return -code error
 	} else {
-		foreach line $ret {
-			log_result "$line_num. $line\n"
+		foreach line $ret {			
+			log_result "\t[string trim $line]"
 			incr line_num 
 		}
 	}	
-	log_result "==== Finish ====\n"
+	#log_result "==== Finish ====\n"
 }
 
