@@ -111,21 +111,21 @@ proc snmp_protocol {} {
 	ttk::radiobutton $p.lf_ver.rb_v3 -text "SNMPv3"  -variable ::temp(ver) -value 3  -command {snmpv3_setup}
 	
 	ttk::labelframe $p.lf_comm -text "community (-c)"
-	ttk::frame $p.lf_comm.fr1 -relief groove
+	ttk::frame $p.lf_comm.fr1 ;#-relief groove
 	ttk::label $p.lf_comm.fr1.lb_comm_r -text "Read"
 	ttk::entry $p.lf_comm.fr1.en_comm_r -textvariable ::temp(comm_r)
-	ttk::frame $p.lf_comm.fr2 -relief groove
+	ttk::frame $p.lf_comm.fr2 ;#-relief groove
 	ttk::label $p.lf_comm.fr2.lb_comm_w -text "Write"
 	ttk::entry $p.lf_comm.fr2.en_comm_w -textvariable ::temp(comm_w)
 
 	ttk::labelframe $p.lf_gen -text "General"
-	ttk::frame $p.lf_gen.fr1 -relief groove
+	ttk::frame $p.lf_gen.fr1 ;#-relief groove
 	ttk::label $p.lf_gen.fr1.lb_timeout -text "Timeout (-t)"
 	ttk::entry $p.lf_gen.fr1.en_timeout -textvariable ::temp(timeout)
-	ttk::frame $p.lf_gen.fr2 -relief groove
+	ttk::frame $p.lf_gen.fr2 ;#-relief groove
 	ttk::label $p.lf_gen.fr2.lb_retry -text "RETRIES (-r)"
 	ttk::entry $p.lf_gen.fr2.en_retry -textvariable ::temp(retry)
-	ttk::frame $p.lf_gen.fr3 -relief groove
+	ttk::frame $p.lf_gen.fr3 ;#-relief groove
 	ttk::label $p.lf_gen.fr3.lb_bind -text "Bind (-B)"
 	ttk::combobox $p.lf_gen.fr3.en_bind -textvariable ::snmp::multihomeip -values $::snmp::homeiplist -state disable
 
@@ -150,7 +150,7 @@ proc snmp_protocol {} {
 	grid $p.lf_ver.rb_v2 -row 0 -column 1 -sticky w -padx 2 -pady 2
 	grid $p.lf_ver.rb_v3 -row 0 -column 2 -sticky w -padx 2 -pady 2
 	
-	grid $p.lf_comm -row 1 -column 0  -sticky news -padx 2 -pady 0
+	grid $p.lf_comm -row 1 -column 0  -sticky news -padx 2 -pady 0 -ipady 2
 	grid $p.lf_comm.fr1 -row 0 -column 0 -sticky we -padx 2 -pady 0
 	grid $p.lf_comm.fr1.lb_comm_r -row 0 -column 0 -sticky w -padx 2 -pady 1
 	grid $p.lf_comm.fr1.en_comm_r -row 0 -column 1 -sticky we -padx 2 -pady 0
@@ -158,7 +158,7 @@ proc snmp_protocol {} {
 	grid $p.lf_comm.fr2.lb_comm_w -row 0 -column 0 -sticky w -padx 2 -pady 1
 	grid $p.lf_comm.fr2.en_comm_w -row 0 -column 1 -sticky we -padx 2 -pady 0 
 	
-	grid $p.lf_gen -row 2 -column 0  -sticky news -padx 2 -pady 0
+	grid $p.lf_gen -row 2 -column 0  -sticky news -padx 2 -ipady 2
 	grid $p.lf_gen.fr1 -row 0 -column 0 -sticky we -padx 2 -pady 2
 	grid $p.lf_gen.fr1.lb_timeout -row 0 -column 0 -sticky w -padx 2 -pady 0
 	grid $p.lf_gen.fr1.en_timeout -row 0 -column 1 -sticky we -padx 2 -pady 0
@@ -167,8 +167,7 @@ proc snmp_protocol {} {
 	grid $p.lf_gen.fr2.en_retry -row 0 -column 1 -sticky we -padx 2 -pady 0
 	grid $p.lf_gen.fr3 -row 1 -column 0 -columnspan 2 -sticky we -padx 2 -pady 2
 	grid $p.lf_gen.fr3.lb_bind -row 0 -column 0 -sticky w -padx 2 -pady 2
-	grid $p.lf_gen.fr3.en_bind -row 0 -column 1 -sticky we -padx 2 -pady 2 -ipadx 0
-	
+	grid $p.lf_gen.fr3.en_bind -row 0 -column 1 -sticky we -padx 2 -pady 2 -ipadx 0	
 	grid $p.lf_gen.fr4 -row 2 -column 0 -columnspan 2 -sticky we -padx 2 -pady 0
 	grid $p.lf_gen.fr4.rb1 -row 0 -column 0 -columnspan 2 -sticky w -padx 2 -pady 0
 	grid $p.lf_gen.fr4.rb2 -row 1 -column 0 -columnspan 2 -sticky w -padx 2 -pady 0
@@ -176,9 +175,9 @@ proc snmp_protocol {} {
 	grid $p.lf_gen.fr4.rb4 -row 3 -column 0 -sticky w -padx 2 -pady 0
 	grid $p.lf_gen.fr4.en  -row 3 -column 1 -sticky we -padx 2 -pady 0
 	
-	grid $p.lf_end -row 3 -column 0 -sticky we
-	grid $p.lf_end.bt_ok -row 0 -column 0     -pady 5
-	grid $p.lf_end.bt_cancel -row 0 -column 1 -pady 5 
+	grid $p.lf_end -row 3 -column 0 -sticky we -padx 2 -ipady 0
+	grid $p.lf_end.bt_ok -row 0 -column 0      -pady 5
+	grid $p.lf_end.bt_cancel -row 0 -column 1  -pady 5 
 	
 	grid columnconfigure $p.lf_ver 0 -weight 1
 	grid columnconfigure $p.lf_ver 1 -weight 1
@@ -428,40 +427,42 @@ proc font_setup {} {
 	wm resizable $p 0 0 
 
 	wm title $p "Font Setting"
-	wm transient $p [winfo toplevel [winfo parent $p]]
+	wm transient $p [winfo toplevel [winfo parent $p]]	
 	tk fontchooser configure -parent .font_setup
-	ttk::label  .font_setup.lb_tree      -text "MIB Tree:"
-	ttk::label  .font_setup.lb_tree_font -text "$::tree_font"
-	ttk::button .font_setup.lb_tree_set  -text "Set" -command {		
+	
+	ttk::frame  .font_setup.fr
+	
+	ttk::label  .font_setup.fr.lb_tree      -text "MIB Tree:"
+	ttk::label  .font_setup.fr.lb_tree_font -text "$::tree_font"
+	ttk::button .font_setup.fr.bt_tree_set  -text "Set" -command {		
 		tk fontchoose configure -font [lindex [$TREE element cget elemText -font] 0] -command [list set_tree_font .font_setup.lb_tree_font ::tree_font]
 		tk fontchooser show
 	}
 
-	ttk::label  .font_setup.lb_info      -text "MIB info:"
-	ttk::label  .font_setup.lb_info_font -text "$::info_font"
-	ttk::button .font_setup.lb_info_set  -text "Set" -command {		
+	ttk::label  .font_setup.fr.lb_info      -text "MIB info:"
+	ttk::label  .font_setup.fr.lb_info_font -text "$::info_font"
+	ttk::button .font_setup.fr.bt_info_set  -text "Set" -command {		
 		tk fontchoose configure -font [$MIBINFO cget -font] -command [list set_font $MIBINFO .font_setup.lb_info_font ::info_font]
 		tk fontchooser show
 	}
 
-	ttk::label  .font_setup.lb_ret      -text "Result:"
-	ttk::label  .font_setup.lb_ret_font -text "$::result_font"
-	ttk::button .font_setup.lb_ret_set  -text "Set" -command {		
+	ttk::label  .font_setup.fr.lb_ret      -text "Result:"
+	ttk::label  .font_setup.fr.lb_ret_font -text "$::result_font"
+	ttk::button .font_setup.fr.bt_ret_set  -text "Set" -command {		
 		tk fontchoose configure -font [$RESULT cget -font] -command [list set_font $RESULT .font_setup.lb_ret_font ::result_font]
 		tk fontchooser show
 	}
-
-	grid .font_setup.lb_tree       -row 0 -column 0 -padx 2 -pady 2 -sticky w
-	grid .font_setup.lb_tree_font  -row 0 -column 1 -padx 4 -pady 2 -sticky we
-	grid .font_setup.lb_tree_set   -row 0 -column 2 -padx 2 -pady 2
-
-	grid .font_setup.lb_info       -row 1 -column 0 -padx 2 -pady 2 -sticky w
-	grid .font_setup.lb_info_font  -row 1 -column 1 -padx 4 -pady 2 -sticky we
-	grid .font_setup.lb_info_set   -row 1 -column 2 -padx 2 -pady 2
-
-	grid .font_setup.lb_ret       -row 2 -column 0 -padx 2 -pady 2 -sticky w
-	grid .font_setup.lb_ret_font  -row 2 -column 1 -padx 4 -pady 2 -sticky we
-	grid .font_setup.lb_ret_set   -row 2 -column 2 -padx 2 -pady 2
+	
+	grid .font_setup.fr
+	grid .font_setup.fr.lb_tree      -row 0 -column 0 -ipadx 2 -ipady 2 -sticky w
+	grid .font_setup.fr.lb_tree_font -row 0 -column 1 -ipadx 4 -ipady 2 -sticky we
+	grid .font_setup.fr.bt_tree_set  -row 0 -column 2 -ipadx 2 -ipady 2
+	grid .font_setup.fr.lb_info      -row 1 -column 0 -ipadx 2 -ipady 2 -sticky w
+	grid .font_setup.fr.lb_info_font -row 1 -column 1 -ipadx 4 -ipady 2 -sticky we
+	grid .font_setup.fr.bt_info_set  -row 1 -column 2 -ipadx 2 -ipady 2
+	grid .font_setup.fr.lb_ret       -row 2 -column 0 -ipadx 2 -ipady 2 -sticky w
+	grid .font_setup.fr.lb_ret_font  -row 2 -column 1 -ipadx 4 -ipady 2 -sticky we
+	grid .font_setup.fr.bt_ret_set   -row 2 -column 2 -ipadx 2 -ipady 2
 
 
 	::tk::PlaceWindow $p 
@@ -653,6 +654,7 @@ proc snmpset_gui {} {
 		set ::snmp::setvalue [lindex [eval snmp_get [::snmp::cmdopt]  -OqvU -IJ [::snmp::addr]  $oid] 0]
 	}
 	ttk::button $w.lf3.bt2_conf -text "Set" -command {
+		set oid [.snmpset.lf2.cb get]	
 		run_cmd "snmp_set [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr] $oid $::snmp::TYPE $::snmp::setvalue"
 		set ::snmp::OID $::backupOID
 		destroy .snmpset
