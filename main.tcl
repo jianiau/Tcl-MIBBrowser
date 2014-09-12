@@ -19,12 +19,17 @@ file mkdir [file join $confPath macro]
 
 lappend ::auto_path [file join $appPath lib]
 
+package require Tk
 package require netsnmptcl
 package require treectrl
 package require inifile
 package require bigint
 package require sha1
 package require ip
+
+catch {ttk::setTheme tileqt}
+#puts [ttk::style configure . -selectbackground]
+#puts [ttk::style configure . -selectforeground]
 
 namespace eval ::snmp {}
 namespace eval ::macro {}
@@ -432,7 +437,7 @@ set y [expr int([winfo screenheight .]*0.1)]
 wm geometry . ${width}x${height}+0+0
 #wm geometry . 1200x675+0+0
 wm deiconify .
-snmp_loadmib -mall -M$::snmp::MIBDIRS
+snmp_loadmib -mall -M$::snmp::MIBDIRS 2>trtrtr
 snmp_translate -TZ -f[file join $confPath translate_output.txt]
 buildtree
 #$TREE selection add 1
@@ -446,6 +451,9 @@ $RESULT tag configure blue -foreground blue
 $RESULT tag configure match -background yellow
 $RESULT tag configure mark -background orange
 $RESULT tag raise mark match
+$RESULT tag configure sel -background [ttk::style configure . -selectbackground] -foreground [ttk::style configure . -selectforeground]
+$RESULT tag raise sel
+$MIBINFO tag configure sel -background [ttk::style configure . -selectbackground] -foreground [ttk::style configure . -selectforeground]
 set ::results ""
 
 # 

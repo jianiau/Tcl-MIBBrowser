@@ -13,13 +13,14 @@ set columnID [$TREE column create]
 $TREE configure -treecolumn $columnID
 
 listbox .listbox
-set SystemHighlight [.listbox cget -selectbackground]
-set SystemHighlightText [.listbox cget -selectforeground]
+set SystemHighlight [ttk::style configure . -selectbackground]
+set SystemHighlightText [ttk::style configure . -selectforeground]
 
-
+#$::SystemHighlight
+#F07747
 $TREE element create elemRect rect -fill [list $::SystemHighlight {selected}]
 
-
+#$::SystemHighlightText 
 $TREE element create elemText text  -font [list $::tree_font ""] -fill [list $::SystemHighlightText {selected}] ;#mibname
 $TREE element create elemText2 text -font [list $::tree_font ""] -fill [list $::SystemHighlightText {selected}] ;# short oid
 $TREE element create elemText3 text -font [list $::tree_font ""] -fill [list $::SystemHighlightText {selected}] ;# full oid
@@ -44,8 +45,8 @@ $TREE style layout style1 elemText3 -ipadx 5
 $TREE item configure root -button yes
 $TREE item style set root $columnID style1
 $TREE item element configure root $columnID elemText -text "The root item"
-set TREE_VS [scrollbar $LF_TREE.vs -command [list $TREE yview] -orient vertical]
-set TREE_HS [scrollbar $LF_TREE.hs -command [list $TREE xview] -orient horizontal]
+set TREE_VS [ttk::scrollbar $LF_TREE.vs -command [list $TREE yview] -orient vertical]
+set TREE_HS [ttk::scrollbar $LF_TREE.hs -command [list $TREE xview] -orient horizontal]
 $TREE configure -xscrollcommand [list $TREE_HS set] -yscrollcommand [list $TREE_VS set]
 grid $TREE $TREE_VS -sticky "news"
 grid $TREE_HS -columnspan 2 -sticky "we"
