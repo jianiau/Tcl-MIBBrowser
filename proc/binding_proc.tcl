@@ -192,6 +192,7 @@ bind $LF_SEARCH.en_search <Return> {
 		if {[ lsearch $::results [$TREE selection get]]<0} {
 			goto_next_match
 		}
+		focus $TREE
 	} else {
 		goto_next_match
 	} 	
@@ -353,7 +354,26 @@ bind $TREE <KeyPress-End> {
     TreeCtrl::SetActiveItem %W [%W item id active] 
 }
 
+bind $TREE <KeyPress-Right> {
+    if {![TreeCtrl::Has2DLayout %W]} {
+		if { [%W item numchildren [%W selection get]] && [%W item isopen [%W selection get]] } {
+			TreeCtrl::SetActiveItem %W [TreeCtrl::UpDown %W active 1]
+		}
+		%W item expand [%W item id active]
+    } else {    
+		TreeCtrl::SetActiveItem %W [TreeCtrl::LeftRight %W active 1]	
+    }
+}
 
+bind $TREE <Control-KeyPress-bracketleft> {
+	set ::direction up
+	goto_next_match
+}
+
+bind $TREE <Control-KeyPress-bracketright> {
+	set ::direction down
+	goto_next_match
+}
 
 
 bind $LF_AGENT.en_ip <KeyRelease> {
