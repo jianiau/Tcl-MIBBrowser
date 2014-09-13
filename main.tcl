@@ -27,14 +27,16 @@ package require bigint
 package require sha1
 package require ip
 
-catch {ttk::setTheme tileqt}
-#puts [ttk::style configure . -selectbackground]
-#puts [ttk::style configure . -selectforeground]
+#catch {ttk::setTheme tileqt}
+
 
 namespace eval ::snmp {}
 namespace eval ::macro {}
 source [file join $appPath proc PBKDF2.tcl]
 source [file join $appPath proc MIB_browser_proc.tcl]
+source [file join $appPath proc dialog.tcl]
+source [file join $appPath proc icons.tcl]
+source [file join $appPath proc keynav.tcl]
 
 
 # set init value
@@ -75,9 +77,9 @@ set ::direction down
 set ::replace_macro_addr 1
 # font
 ttk::style configure My.TRadiobutton -font {"DejaVu Sans Mono" 9 {}}
-set ::tree_font   {"Droid Sans" 10 normal}
-set ::info_font   {"Droid Sans" 8  normal}
-set ::result_font {"Droid Sans" 10 normal}
+set ::tree_font   {"Droid Sans" 12 normal}
+set ::info_font   {"Droid Sans" 10  normal}
+set ::result_font {"Droid Sans" 12 normal}
 
 set ::show_mib_info 1
 set ::result_clear 1
@@ -114,31 +116,63 @@ wm title . "Tcl-MIBBrowser"
 wm withdraw .
 wm transient .
 wm protocol . WM_DELETE_WINDOW {
-	set reply [tk_dialog .foo "Exit" "Save settings to config.ini ?" "" "" Yes No]
+	ttk::dialog .saveFileDialog -title "Save file?" \
+		-icon question -message "Save file before closing?" \
+		-detail "If you do not save the file, your work will be lost" \
+		-buttons [list yes no ] \
+		-labels [list yes "Save file" no "Don't save"] \
+		-command save_config
+	vwait ::exist_TCLMIB	
+	#set reply [tk_dialog .foo "Exit" "Save settings to config.ini ?" "" "" Yes No]	
+	#if {$reply==0} {
+	#	set inifd [::ini::open $confPath/config.ini w+]
+	#	foreach key {timeout retry MIBDIRS output useroutput IPv6 agentip ver comm_r comm_w usm level \
+	#				authtype authpw authkey authkeytype\
+	#				privtype privpw privkey  privkeytype useDH DHKey } {
+	#		::ini::set $inifd snmp $key [set ::snmp::$key]
+	#	}
+	#	foreach key {tree_font info_font result_font show_mib_info result_clear replace_macro_addr} {
+	#		::ini::set $inifd global $key [set ::$key]
+	#	}
+	#	for {set i 1} {$i<=$::function_key_num} {incr i} {
+	#		::ini::set $inifd quick F$i.name [$TOOL_BAR.bt_quickF$i cget -text]
+	#		::ini::set $inifd quick F$i.cmd  [$TOOL_BAR.bt_quickF$i cget -command]
+	#	}
+	#	::ini::commit $inifd
+	#	::ini::close $inifd
+	#}
 	
-	if {$reply==0} {
-		set inifd [::ini::open $confPath/config.ini w+]
-		foreach key {timeout retry MIBDIRS output useroutput IPv6 agentip ver comm_r comm_w usm level \
-					authtype authpw authkey authkeytype\
-					privtype privpw privkey  privkeytype useDH DHKey } {
-			::ini::set $inifd snmp $key [set ::snmp::$key]
-		}
-		foreach key {tree_font info_font result_font show_mib_info result_clear replace_macro_addr} {
-			::ini::set $inifd global $key [set ::$key]
-		}
-		for {set i 1} {$i<=$::function_key_num} {incr i} {
-			::ini::set $inifd quick F$i.name [$TOOL_BAR.bt_quickF$i cget -text]
-			::ini::set $inifd quick F$i.cmd  [$TOOL_BAR.bt_quickF$i cget -command]
-		}
-		::ini::commit $inifd
-		::ini::close $inifd
-	}
-	save_bookmark
+#	save_bookmark
+	destroy .
 	exit
 }
 
 
-
+proc save_config {res} {
+	global confPath TOOL_BAR
+	switch $res {
+		"yes" {
+			set inifd [::ini::open $confPath/config.ini w+]
+			foreach key {timeout retry MIBDIRS output useroutput IPv6 agentip ver comm_r comm_w usm level \
+						authtype authpw authkey authkeytype\
+						privtype privpw privkey  privkeytype useDH DHKey } {
+				::ini::set $inifd snmp $key [set ::snmp::$key]
+			}
+			foreach key {tree_font info_font result_font show_mib_info result_clear replace_macro_addr} {
+				::ini::set $inifd global $key [set ::$key]
+			}
+			for {set i 1} {$i<=$::function_key_num} {incr i} {
+				::ini::set $inifd quick F$i.name [$TOOL_BAR.bt_quickF$i cget -text]
+				::ini::set $inifd quick F$i.cmd  [$TOOL_BAR.bt_quickF$i cget -command]
+			}
+			::ini::commit $inifd
+			::ini::close $inifd		
+		}
+		"no" {
+		}
+	}
+	set ::exist_TCLMIB 1
+}
 
 for {set i 0} {$i<=27} {incr i} {
 	switch $i {
@@ -161,6 +195,12 @@ for {set i 0} {$i<=27} {incr i} {
 }
 unset i
 
+
+#option add *Menu.background [ttk::style configure . -background]
+#option add *Menu.activeBackground [ttk::style configure . -selectbackground]
+#option add *Menu.activeForeground [ttk::style configure . -background]
+
+
 ## menu
 menu .mbar -type menubar
 .mbar add cascade -label "File"
@@ -168,12 +208,13 @@ menu .mbar -type menubar
 .mbar add cascade -label "View" -menu .mbar.view
 .mbar add cascade -label "Result" -menu .mbar.result
 .mbar add cascade -label "Macro" -menu .mbar.macro
+.mbar add cascade -label "Theme" -menu .mbar.theme
 
 # option menu
 menu .mbar.option -tearoff 0
 .mbar.option add cascade -label "Search" -menu .mbar.option.search
-.mbar.option add separator
-if {$tcl_version >= 8.6} {	
+if {$tcl_version >= 8.6} {
+	.mbar.option add separator
 	.mbar.option add command -label "Font" -command {font_setup}
 }
 
@@ -227,6 +268,49 @@ menu .mbar.macro.record -tearoff 0
 .mbar.macro add command -label "Run Macro" -command {run_macro}
 .mbar.macro add checkbutton -label "Replace Macro IP" -variable ::replace_macro_addr
 
+# Theme menu
+foreach name [ttk::themes] {
+    if {![info exists ::THEMES($name)]} {
+	lappend THEMELIST $name [set ::THEMES($name) [string totitle $name]]
+    }
+}
+
+
+catch {package require ttk::theme::tileqt}
+
+proc makeQtMenu {menu} {
+    menu $menu -tearoff 0
+    foreach {style} [ttk::theme::tileqt::availableStyles] {
+	$menu add radiobutton -label $style \
+	    -variable ::currentQtStyle -value [string tolower $style] \
+	    -command "
+	    	ttk::setTheme tileqt	
+	    	ttk::theme::tileqt::applyStyle $style
+	    "
+    }
+    return $menu
+}
+
+menu .mbar.theme -tearoff 0
+foreach {theme name} $::THEMELIST {
+	if {$theme=="tileqt"} {
+		continue
+	}
+	.mbar.theme add radiobutton -label $name \
+		-variable ::ttk::currentTheme -value $theme \
+		-command [list ttk::setTheme $theme]
+}
+if {[lsearch $::THEMELIST tileqt] > -1} {
+	.mbar.theme add radiobutton -label Tileqt -variable ::ttk::currentTheme -value tileqt -command {		
+		ttk::setTheme tileqt
+		ttk::theme::tileqt::updateLayouts
+		ttk::theme::tileqt::updateStyles
+		set ::currentQtStyle [ttk::theme::tileqt::currentThemeName]
+	}
+	.mbar.theme add separator
+	makeQtMenu .mbar.theme.qt
+	.mbar.theme add cascade -label "QtStyle" -menu .mbar.theme.qt
+}
 
 .mbar add cascade -label "Help"
 . configure -menu .mbar
@@ -455,6 +539,8 @@ $RESULT tag configure sel -background [ttk::style configure . -selectbackground]
 $RESULT tag raise sel
 $MIBINFO tag configure sel -background [ttk::style configure . -selectbackground] -foreground [ttk::style configure . -selectforeground]
 set ::results ""
+
+
 
 # 
 proc ::tk::FirstMenu w {}

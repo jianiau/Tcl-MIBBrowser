@@ -435,21 +435,21 @@ proc font_setup {} {
 	ttk::label  .font_setup.fr.lb_tree      -text "MIB Tree:"
 	ttk::label  .font_setup.fr.lb_tree_font -text "$::tree_font"
 	ttk::button .font_setup.fr.bt_tree_set  -text "Set" -command {		
-		tk fontchoose configure -font [lindex [$TREE element cget elemText -font] 0] -command [list set_tree_font .font_setup.lb_tree_font ::tree_font]
+		tk fontchoose configure -font [lindex [$TREE element cget elemText -font] 0] -command [list set_tree_font .font_setup.fr.lb_tree_font ::tree_font]
 		tk fontchooser show
 	}
 
 	ttk::label  .font_setup.fr.lb_info      -text "MIB info:"
 	ttk::label  .font_setup.fr.lb_info_font -text "$::info_font"
 	ttk::button .font_setup.fr.bt_info_set  -text "Set" -command {		
-		tk fontchoose configure -font [$MIBINFO cget -font] -command [list set_font $MIBINFO .font_setup.lb_info_font ::info_font]
+		tk fontchoose configure -font [$MIBINFO cget -font] -command [list set_font $MIBINFO .font_setup.fr.lb_info_font ::info_font]
 		tk fontchooser show
 	}
 
 	ttk::label  .font_setup.fr.lb_ret      -text "Result:"
 	ttk::label  .font_setup.fr.lb_ret_font -text "$::result_font"
 	ttk::button .font_setup.fr.bt_ret_set  -text "Set" -command {		
-		tk fontchoose configure -font [$RESULT cget -font] -command [list set_font $RESULT .font_setup.lb_ret_font ::result_font]
+		tk fontchoose configure -font [$RESULT cget -font] -command [list set_font $RESULT .font_setup.fr.lb_ret_font ::result_font]
 		tk fontchooser show
 	}
 	
@@ -702,11 +702,14 @@ proc snmpset_gui {} {
 	grid $w.lf4 -sticky we -padx 5
 	grid $w.lf4.rb1 $w.lf4.rb2 $w.lf4.rb3 -sticky w -padx 5 -pady 5
 	grid $w.lf4.rb4 $w.lf4.rb5 $w.lf4.rb6 -sticky w -padx 5 -pady 5
-	grid $w.lf4.rb7 $w.lf4.rb8 $w.lf4.rb9 -sticky w -padx 5 -pady 5
+	grid $w.lf4.rb7 $w.lf4.rb8 $w.lf4.rb9 -sticky w -padx 5 -pady 5	
+	::tk::PlaceWindow $w
 	
-	::tk::PlaceWindow $w 
+	bind .snmpset.lf3.en <Return> {
+		.snmpset.lf3.bt2_conf invoke
+	}
 	grab $w
-
+	focus $w.lf3.en
 }
 
 

@@ -421,7 +421,33 @@ proc clear_quick_button {ind} {
 
 }
 
+bind $TREE <<ThemeChanged>> {
+	set SystemHighlight [ttk::style configure . -selectbackground]
+	set SystemHighlightText [ttk::style configure . -selectforeground]
+	%W element configure elemRect  -fill [list $::SystemHighlight {selected}]
+	%W element configure elemText  -fill [list $::SystemHighlightText {selected}] ;#mibname
+	%W element configure elemText2 -fill [list $::SystemHighlightText {selected}] ;# short oid
+	%W element configure elemText3 -fill [list $::SystemHighlightText {selected}] ;# full oid
+	change_menu_color .mbar
+	$RESULT tag configure sel -background [ttk::style configure . -selectbackground] -foreground [ttk::style configure . -selectforeground]	
+	$MIBINFO tag configure sel -background [ttk::style configure . -selectbackground] -foreground [ttk::style configure . -selectforeground]
+	option add *Menu.background [ttk::style configure . -background]
+	option add *Menu.activeBackground [ttk::style configure . -selectbackground]
+	option add *Menu.activeForeground [ttk::style configure . -selectforeground]
+}
 
+#bind .mbar <<ThemeChanged>> {
+#	change_menu_color .mbar
+#}
+
+proc change_menu_color {menu} {
+	$menu configure -background [ttk::style configure . -background]
+	$menu configure -activebackground [ttk::style configure . -selectbackground]
+	$menu configure -activeforeground [ttk::style configure . -selectforeground]
+	foreach submenu [winfo children $menu] {
+		change_menu_color $submenu
+	}
+}
 
 #bind . <Key> {
 #	puts "Tes: key is %K"
