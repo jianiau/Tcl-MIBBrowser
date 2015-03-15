@@ -27,7 +27,6 @@ package require bigint
 package require sha1
 package require ip
 
-#catch {ttk::setTheme tileqt}
 
 
 namespace eval ::snmp {}
@@ -276,40 +275,13 @@ foreach name [ttk::themes] {
 }
 
 
-catch {package require ttk::theme::tileqt}
 
-proc makeQtMenu {menu} {
-    menu $menu -tearoff 0
-    foreach {style} [ttk::theme::tileqt::availableStyles] {
-	$menu add radiobutton -label $style \
-	    -variable ::currentQtStyle -value [string tolower $style] \
-	    -command "
-	    	ttk::setTheme tileqt	
-	    	ttk::theme::tileqt::applyStyle $style
-	    "
-    }
-    return $menu
-}
 
 menu .mbar.theme -tearoff 0
 foreach {theme name} $::THEMELIST {
-	if {$theme=="tileqt"} {
-		continue
-	}
 	.mbar.theme add radiobutton -label $name \
 		-variable ::ttk::currentTheme -value $theme \
 		-command [list ttk::setTheme $theme]
-}
-if {[lsearch $::THEMELIST tileqt] > -1} {
-	.mbar.theme add radiobutton -label Tileqt -variable ::ttk::currentTheme -value tileqt -command {		
-		ttk::setTheme tileqt
-		ttk::theme::tileqt::updateLayouts
-		ttk::theme::tileqt::updateStyles
-		set ::currentQtStyle [ttk::theme::tileqt::currentThemeName]
-	}
-	.mbar.theme add separator
-	makeQtMenu .mbar.theme.qt
-	.mbar.theme add cascade -label "QtStyle" -menu .mbar.theme.qt
 }
 
 .mbar add cascade -label "Help"
