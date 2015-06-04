@@ -1,7 +1,8 @@
-#
-# $Id: icons.tcl,v 1.4 2006/11/06 14:46:42 jenglish Exp $
-#
-# Tile package -- stock icons.
+########################################################################
+# tile-extras: stock icons.
+# Copyright (c) 2005, Joe English.
+# Freely redistributable; see the file license.terms for details.
+########################################################################
 # 
 # Usage:
 #	$w configure -image [ttk::stockIcon $context/$icon]
@@ -15,6 +16,8 @@
 # http://standards.freedesktop.org/icon-naming-spec/
 # They've finally gotten around to publishing something.
 #
+
+package provide ttk::icons 0
 
 namespace eval ttk {
     variable Icons		;# Map: icon name -> image

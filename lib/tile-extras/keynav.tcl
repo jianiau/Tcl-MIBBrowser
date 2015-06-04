@@ -2,9 +2,6 @@
 # keynav package - Enhanced keyboard navigation
 # Copyright (C) 2003 Joe English
 # Freely redistributable; see the file license.terms for details.
-#
-# $Id: keynav.tcl,v 1.8 2006/04/07 19:30:48 jenglish Exp $
-#
 ########################################################################
 #
 # Usage:
@@ -182,7 +179,8 @@ proc keynav::traverseTo {w} {
 #
 # Provide TIP #204 functionality if we're running 8.4:
 #
-if {![package vsatisfies [package provide Tk] 8.5]} {
+if {[catch {package require Tk 8.5}]} {
+# SB: if {![package vsatisfies [package provide Tk] 8.5]} 
     bind all <Tab> 		{ keynav::traverseTo [tk_focusNext %W] ; break}
     bind all <<PrevWindow>>	{ keynav::traverseTo [tk_focusPrev %W] }
     bind Entry <<TraverseIn>> 	{ %W selection range 0 end; %W icursor end }

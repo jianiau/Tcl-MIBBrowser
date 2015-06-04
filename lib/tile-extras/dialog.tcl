@@ -1,9 +1,8 @@
-#
-# $Id: dialog.tcl,v 1.6 2007/07/10 21:53:26 jenglish Exp $
-#
-# Copyright (c) 2005, Joe English.  Freely redistributable.
-#
-# Tile widget set: dialog boxes.
+########################################################################
+# tile-extras: dialog boxes.
+# Copyright (c) 2005, Joe English.
+# Freely redistributable; see the file license.terms for details.
+########################################################################
 #
 # TODO: option to keep dialog onscreen ("persistent" / "transient")
 # TODO: accelerator keys.
@@ -13,6 +12,9 @@
 # TODO: MAYBE: option for app-modal dialogs
 # TODO: MAYBE: [wm withdraw] dialog on dismiss instead of self-destructing 
 #
+
+package require keynav
+package require ttk::icons
 
 package provide ttk::dialog 0.8
 
@@ -224,8 +226,6 @@ proc ttk::dialog::Constructor {dlg args} {
     pack $f -expand true -fill both
     keynav::enableMnemonics $dlg
     wm deiconify $dlg
-    wm resizable $dlg 0 0
-    grab $dlg
 }
 
 ## ttk::dialog::clientframe --
