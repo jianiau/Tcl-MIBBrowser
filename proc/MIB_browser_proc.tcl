@@ -1,18 +1,3 @@
-#  This program is free software; you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation; either version 2 of the License, or
-#  (at your option) any later version.
-#  
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#  
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software
-#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#  MA 02110-1301, USA.
-#  
 
 proc Sleep {msec} {
 	set _ww 0
@@ -142,12 +127,12 @@ proc snmp_protocol {} {
 	ttk::entry $p.lf_gen.fr2.en_retry -textvariable ::temp(retry)
 	ttk::frame $p.lf_gen.fr3 ;#-relief groove
 	ttk::label $p.lf_gen.fr3.lb_bind -text "Bind (-B)"
-	ttk::combobox $p.lf_gen.fr3.en_bind -textvariable ::snmp::multihomeip -values $::snmp::homeiplist -state disable
+	ttk::combobox $p.lf_gen.fr3.en_bind -textvariable ::snmp::multihomeip -values $::snmp::homeiplist -state normal
 
 	ttk::labelframe  $p.lf_gen.fr4 -text "Output format (-O)"
-	ttk::radiobutton $p.lf_gen.fr4.rb1 -value 1 -variable ::temp(output) -style  My.TRadiobutton -text "-Os    sysUpTimeInstance = Timeticks: (43664654) 5 days, 1:17:26.54"
-	ttk::radiobutton $p.lf_gen.fr4.rb2 -value 2 -variable ::temp(output) -style  My.TRadiobutton -text "-On    .1.3.6.1.2.1.1.3.0 = Timeticks: (43680332) 5 days, 1:17:26.54"
-	ttk::radiobutton $p.lf_gen.fr4.rb3 -value 3 -variable ::temp(output) -style  My.TRadiobutton -text "-OQs   sysUpTimeInstance = 5:1:17:26.54"
+	ttk::radiobutton $p.lf_gen.fr4.rb1 -value 1 -variable ::temp(output) -style  My.TRadiobutton -text "-O0s    sysUpTimeInstance = Timeticks: (43664654) 5 days, 1:17:26.54"
+	ttk::radiobutton $p.lf_gen.fr4.rb2 -value 2 -variable ::temp(output) -style  My.TRadiobutton -text "-O0n    .1.3.6.1.2.1.1.3.0 = Timeticks: (43680332) 5 days, 1:17:26.54"
+	ttk::radiobutton $p.lf_gen.fr4.rb3 -value 3 -variable ::temp(output) -style  My.TRadiobutton -text "-O0Qs   sysUpTimeInstance = 5:1:17:26.54"
 	ttk::radiobutton $p.lf_gen.fr4.rb4 -value 4 -variable ::temp(output) -style  My.TRadiobutton -text "User defined"
 	ttk::entry       $p.lf_gen.fr4.en  -textvariable ::temp(useroutput)
 	
@@ -155,6 +140,10 @@ proc snmp_protocol {} {
 	ttk::button $p.lf_end.bt_ok     -text OK -command {
 		foreach varname {ver comm_r comm_w timeout retry output useroutput} {
 			set ::snmp::$varname  $::temp($varname)
+		}
+		if {[info exists ::snmp::multihomeip]} {
+			lappend ::snmp::homeiplist $::snmp::multihomeip
+			set ::snmp::homeiplist [lsort -unique $::snmp::homeiplist]
 		}
 		destroy .protocol
 	}
@@ -439,7 +428,7 @@ proc font_setup {} {
 	catch {destroy .font_setup}
 	set p [toplevel .font_setup]
 	bind $p <Escape> {destroy .font_setup}
-	wm resizable $p 0 0 
+	wm resizable $p 0 0
 
 	wm title $p "Font Setting"
 	wm transient $p [winfo toplevel [winfo parent $p]]	
@@ -448,21 +437,21 @@ proc font_setup {} {
 	ttk::frame  .font_setup.fr
 	
 	ttk::label  .font_setup.fr.lb_tree      -text "MIB Tree:"
-	ttk::label  .font_setup.fr.lb_tree_font -text "$::tree_font"
+	ttk::label  .font_setup.fr.lb_tree_font -text "$::tree_font" -font $::tree_font
 	ttk::button .font_setup.fr.bt_tree_set  -text "Set" -command {		
 		tk fontchoose configure -font [lindex [$TREE element cget elemText -font] 0] -command [list set_tree_font .font_setup.fr.lb_tree_font ::tree_font]
 		tk fontchooser show
 	}
 
 	ttk::label  .font_setup.fr.lb_info      -text "MIB info:"
-	ttk::label  .font_setup.fr.lb_info_font -text "$::info_font"
+	ttk::label  .font_setup.fr.lb_info_font -text "$::info_font" -font $::info_font
 	ttk::button .font_setup.fr.bt_info_set  -text "Set" -command {		
 		tk fontchoose configure -font [$MIBINFO cget -font] -command [list set_font $MIBINFO .font_setup.fr.lb_info_font ::info_font]
 		tk fontchooser show
 	}
 
 	ttk::label  .font_setup.fr.lb_ret      -text "Result:"
-	ttk::label  .font_setup.fr.lb_ret_font -text "$::result_font"
+	ttk::label  .font_setup.fr.lb_ret_font -text "$::result_font" -font $::result_font
 	ttk::button .font_setup.fr.bt_ret_set  -text "Set" -command {		
 		tk fontchoose configure -font [$RESULT cget -font] -command [list set_font $RESULT .font_setup.fr.lb_ret_font ::result_font]
 		tk fontchooser show
@@ -479,17 +468,16 @@ proc font_setup {} {
 	grid .font_setup.fr.lb_ret_font  -row 2 -column 1 -ipadx 4 -ipady 2 -sticky we
 	grid .font_setup.fr.bt_ret_set   -row 2 -column 2 -ipadx 2 -ipady 2
 
-
 	::tk::PlaceWindow $p 
-	#grab $p
+
 }
 
 	
 proc set_font { w1 w2 var font args} {
 	upvar $var var_ptr
-	$w1 configure -font [font actual $font]	
-	$w2 configure -text "[font actual $font -family] [font actual $font -size] [font actual $font -weight]"
+	$w1 configure -font [font actual $font]
 	set var_ptr "\"[font actual $font -family]\" [font actual $font -size] [font actual $font -weight]"
+	$w2 configure -text "[font actual $font -family] [font actual $font -size] [font actual $font -weight]" -font $var_ptr
 }
 
 proc set_tree_font {w var font args} {
@@ -497,9 +485,9 @@ proc set_tree_font {w var font args} {
 	upvar $var var_ptr
 	$TREE element configure elemText  -font [list [font actual $font] {} ]
 	$TREE element configure elemText2 -font [list [font actual $font] {} ]
-	$TREE element configure elemText3 -font [list [font actual $font] {} ]
-	$w configure -text "[font actual $font -family] [font actual $font -size] [font actual $font -weight]"
+	$TREE element configure elemText3 -font [list [font actual $font] {} ]	
 	set var_ptr "\"[font actual $font -family]\" [font actual $font -size] [font actual $font -weight]"
+	$w configure -text "[font actual $font -family] [font actual $font -size] [font actual $font -weight]" -font $var_ptr
 }
 
 proc change_tree_dsp {} {
@@ -520,9 +508,7 @@ proc change_tree_dsp {} {
 			$TREE style layout style1 elemText2 -visible 0
 			$TREE style layout style1 elemText3 -visible 1
 		}
-	}
-	
-
+	}	
 }
 
 
@@ -539,7 +525,7 @@ proc snmpget_gui {{method get}} {
 
 	if { [llength $index_list] == 1} {
 		set oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
-		run_cmd "snmp_$method [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr] $oid"
+		run_cmd "snmp_$method [::snmp::cmdopt] [::snmp::bind] [::snmp::outfmt] [::snmp::addr] $oid"
 		return
 
 	}
@@ -557,7 +543,7 @@ proc snmpget_gui {{method get}} {
 
 	set ::temp_method $method
 	ttk::button .snmpget.bt -text "$method" -command {
-		run_cmd "snmp_[set ::temp_method] [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr] $::snmp::OID.[.snmpget.cb get]"
+		run_cmd "snmp_[set ::temp_method] [::snmp::cmdopt] [::snmp::bind] [::snmp::outfmt] [::snmp::addr] $::snmp::OID.[.snmpget.cb get]"
 		unset ::temp_method
 		destroy .snmpget
 	}
@@ -566,6 +552,70 @@ proc snmpget_gui {{method get}} {
 	grid .snmpget.cb -row 0 -column 0 -sticky we -padx 5 -pady 5
 	grid .snmpget.bt -row 1 -column 0 -sticky we -padx 5 -pady 5
 	focus .snmpget.cb
+	::tk::PlaceWindow $p 
+	grab $p
+}
+
+proc snmptable_gui {{method get}} {
+	global RESULT
+
+	#foreach {ret index_list} [get_index] {}
+	#if {!$ret} {
+	#	if {$::result_clear} {$RESULT delete 1.0 end}
+	#	log_result "Error: get index fail\n" err
+	#	log_result "[string trim $index_list]\n" err
+	#	return
+	#}
+
+	#if { [llength $index_list] == 1} {
+	#	set oid [set ::snmp::OID].[string trim [lindex $index_list 0]]
+	#	run_cmd "snmp_$method [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr] $oid"
+	#	return
+
+	#}
+	#
+	#if {[llength $index_list]==0} {
+	#	return
+	#}
+	catch {destroy .snmptable}
+	set p [toplevel .snmptable]
+	bind $p <Escape> {destroy .snmptable}
+	wm title $p "Select index"
+	wm resizable $p 1 1 
+	wm transient $p [winfo toplevel [winfo parent $p]]
+	set tbl $p.tbl
+	scrollbar $p.hsb -orient horizontal -command [list $tbl xview]
+	scrollbar $p.vsb -orient vertical -command [list $tbl yview]
+	tablelist::tablelist $tbl \
+	-xscrollcommand [list .snmptable.hsb set] \
+	-yscrollcommand [list .snmptable.vsb set] \
+	-showseparators 1 -font {Arial 12 {}} \
+	-columns "0 oid 0 value"
+	# \
+	#-labelcommand  tablelist::sortByColumn \
+	#-showseparators 0	
+	
+	grid $tbl -row 0 -column 0 -sticky news
+	grid .snmptable.vsb -row 0 -column 1 -sticky ns
+	grid .snmptable.hsb -row 1 -column 0 -sticky we
+	grid columnconfigure .snmptable 0 -weight 1
+	grid rowconfigure .snmptable 0 -weight 1
+	
+	#.snmptable.tbl insert end [list "111" "222"]
+	
+	#ttk::combobox .snmpget.cb -value $index_list -state readonly
+
+	#set ::temp_method $method
+	#ttk::button .snmpget.bt -text "$method" -command {
+	#	run_cmd "snmp_[set ::temp_method] [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr] $::snmp::OID.[.snmpget.cb get]"
+	#	unset ::temp_method
+	#	destroy .snmpget
+	#}
+	#
+	#.snmpget.cb current 0	
+	#grid .snmpget.cb -row 0 -column 0 -sticky we -padx 5 -pady 5
+	#grid .snmpget.bt -row 1 -column 0 -sticky we -padx 5 -pady 5
+	#focus .snmpget.cb
 	::tk::PlaceWindow $p 
 	grab $p
 }
@@ -609,13 +659,17 @@ proc snmp_dump {args} {
 proc snmp_upload {args} {
 	global RESULT confPath	
 	set oid [lindex $args end]
-	set loadfd [tk_getOpenFile -initialdir $confPath/dumpfile]
+	if {![info exist ::snmp::initdir]} {
+		set ::snmp::initdir [file join $confPath dumpfile]
+	}	
+	set loadfd [tk_getOpenFile -initialdir $::snmp::initdir]
 	if {$loadfd==""} {return}
+	set ::snmp::initdir	[file dirname $loadfd]
 	set fd [open $loadfd r]
 	fconfigure $fd -translation binary
 	binary scan [read $fd] H* hexdata
 	
-	if [catch {eval snmp_set [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $oid x $hexdata} ret] {
+	if [catch {eval snmp_set [::snmp::cmdopt rw] [::snmp::outfmt] [::snmp::addr]  $oid x $hexdata} ret] {
 		log_result "Error: $ret \n"	err
 	} else {
 		log_result "Upload $loadfd\n"		
@@ -670,7 +724,7 @@ proc snmpset_gui {} {
 	}
 	ttk::button $w.lf3.bt2_conf -text "Set" -command {
 		set oid [.snmpset.lf2.cb get]	
-		run_cmd "snmp_set [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr] $oid $::snmp::TYPE $::snmp::setvalue"
+		run_cmd "snmp_set [::snmp::cmdopt rw] [::snmp::bind] [::snmp::outfmt] [::snmp::addr] $oid $::snmp::TYPE $::snmp::setvalue"
 		set ::snmp::OID $::backupOID
 		destroy .snmpset
 	}
@@ -757,7 +811,7 @@ proc snmpwalk {args} {
 	#if oid_ischild  $::snmp::OID nextoid
 
 	while {1} {
-		set nextoid [string trim [lindex [split [lindex [eval snmp_getnext [::snmp::cmdopt] -OQn [::snmp::addr]  $oid] 0] =] 0] .]
+		set nextoid [string trim [lindex [split [lindex [eval snmp_getnext [::snmp::cmdopt] [::snmp::bind] -OQn [::snmp::addr]  $oid] 0] =] 0] .]
 		#puts oid=$oid
 		#puts nextoid=$nextoid
 		if {![oid_ischild [lindex $args end] $nextoid]} {break}
@@ -780,8 +834,39 @@ proc oid_ischild {oid1 oid2} {
 
 proc ::snmp::snmpwalk {} {
 	if {$::snmp::OID==""} {return}
-	run_cmd "snmp_walk [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID"
+	run_cmd "snmp_walk [::snmp::cmdopt] [::snmp::bind] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID"
 	#run_cmd "snmpwalk [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID"
+}
+
+proc ::snmp::snmpbulkget {} {
+	if {$::snmp::OID==""} {return}
+	run_cmd "snmp_bulkget [::snmp::cmdopt] [::snmp::bind] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID"
+	#run_cmd "snmpwalk [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID"
+}
+
+proc ::snmp::snmptable {} {
+	if {$::snmp::OID==""} {return}
+	snmptable_gui
+	set rets [eval snmp_walk [::snmp::cmdopt] [::snmp::bind] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID]
+	foreach ret $rets {
+		.snmptable.tbl insert end [list [lindex $ret 0] [lindex $ret 2]]	
+	}
+	
+	while {[winfo exist .snmptable]} {
+		Sleep 1000	
+		set rets [eval snmp_walk [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID]
+		set row_ind 0
+		foreach ret $rets {
+			if {![winfo exist .snmptable]} {break}
+			.snmptable.tbl cellconfigure $row_ind,0 -text [lindex $ret 0]
+			.snmptable.tbl cellconfigure $row_ind,1 -text [lindex $ret 2]
+			incr row_ind
+		}
+		#.snmptable.tbl insert end [list [lindex $ret 0] [lindex $ret 2]]
+		
+	}
+	
+	#.snmptable.tbl insert end [list "111" "222"]
 }
 
 proc ::snmp::snmpset {} {
@@ -796,14 +881,20 @@ proc ::snmp::snmpget {} {
 
 proc ::snmp::snmpgetnext {} {
 	if {$::snmp::OID==""} {return}
-	run_cmd "snmp_getnext [::snmp::cmdopt] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID"
+	run_cmd "snmp_getnext [::snmp::cmdopt] [::snmp::bind] [::snmp::outfmt] [::snmp::addr]  $::snmp::OID"
+}
+
+proc ::snmp::bind {} {
+	if {[info exists ::snmp::multihomeip]} {
+		return "-B$::snmp::multihomeip"	
+	}
 }
 
 proc ::snmp::outfmt {} {
 	switch $::snmp::output {
-		"1" {return -Os}
-		"2" {return -On}
-		"3" {return -OQs}
+		"1" {return -O0s}
+		"2" {return -O0n}
+		"3" {return -O0Qs}
 		"4" {return $::snmp::useroutput}
 	}
 }
@@ -1076,6 +1167,7 @@ proc run_cmd {str} {
 	$RESULT tag remove match 1.0 end
 	$RESULT tag remove mark  1.0 end
 	if {$::result_clear} {$RESULT delete 1.0 end}
+#	puts $str
 	set ::snmp::cmd $str
 	log_result "==== Start ====\n"
 	update
@@ -1088,6 +1180,9 @@ proc run_cmd {str} {
 		log_result "Error: [string trim $ret]\n" err
 		#return -code error
 	} else {
+		#puts ret=$ret
+		binary scan $ret H* hex
+		#puts ----------ret=$hex
 		foreach line $ret {
 			log_result "$line_num. $line\n"
 			incr line_num 
@@ -1180,18 +1275,24 @@ proc run_macro_cmd {str} {
 	set line_num 1
 	set run_str $str
 	if {$::replace_macro_addr} {
+		set addrstr [::snmp::addr]
 		if {[lindex $str 0]=="snmp_set"} {
-			set strlst [lreplace $str end-3 end-3 "\[::snmp::addr\]"]
-			set show_cmd [lreplace $str end-3 end-3 [::snmp::addr]]
+#			set strlst [lreplace $str end-3 end-3 "\[::snmp::addr\]"]
+			set strlst [lreplace $str end-3 end-3 $addrstr]
+#			set show_cmd [lreplace $str end-3 end-3 $addrstr]
+			set show_cmd [lreplace $str end-3 end-3 $addrstr]
 		} else {
-			set strlst [lreplace $str end-1 end-1 "\[::snmp::addr\]"]
-			set show_cmd [lreplace $str end-1 end-1 [::snmp::addr]]
+#			set strlst [lreplace $str end-1 end-1 "\[::snmp::addr\]"]
+			set strlst [lreplace $str end-1 end-1 $addrstr]
+#			set show_cmd [lreplace $str end-1 end-1 [::snmp::addr]]
+			set show_cmd [lreplace $str end-1 end-1 $addrstr]
 		}
 		set run_str [join $strlst]
 	}
 	
 	log_result "$show_cmd\n" blue
 	update
+puts "run_str=$run_str"
 	if [catch {eval $run_str} ret] {
 		log_result "Error: [string trim $ret]\n" err
 		return -code error
