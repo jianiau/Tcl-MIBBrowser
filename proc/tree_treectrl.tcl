@@ -1,21 +1,5 @@
-#  This program is free software; you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation; either version 2 of the License, or
-#  (at your option) any later version.
-#  
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#  
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software
-#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#  MA 02110-1301, USA.
-#  
-
-set TREE [treectrl $LF_TREE.t 	-bg white \
-		-highlightthickness 0 \
+set TREE [treectrl $LF_TREE.t \
+		-highlightthickness 1 \
 		-selectmode single \
 		-relief groove \
 		-showroot no \
@@ -32,30 +16,27 @@ listbox .listbox
 set SystemHighlight [ttk::style configure . -selectbackground]
 set SystemHighlightText [ttk::style configure . -selectforeground]
 
-#$::SystemHighlight
-#F07747
-$TREE element create elemRect rect -fill [list $::SystemHighlight {selected}]
+
+
+$TREE element create elemRect rect 
+#-fill [list $::SystemHighlight {selected}]
 
 #$::SystemHighlightText 
-$TREE element create elemText text  -font [list $::tree_font ""] -fill [list $::SystemHighlightText {selected}] ;#mibname
-$TREE element create elemText2 text -font [list $::tree_font ""] -fill [list $::SystemHighlightText {selected}] ;# short oid
-$TREE element create elemText3 text -font [list $::tree_font ""] -fill [list $::SystemHighlightText {selected}] ;# full oid
+$TREE element create elemText text  -font [list $::tree_font ""] 
+#-fill [list $::SystemHighlightText {selected}] ;#mibname
+$TREE element create elemText2 text -font [list $::tree_font ""] 
+#-fill [list $::SystemHighlightText {selected}] ;# short oid
+$TREE element create elemText3 text -font [list $::tree_font ""] 
+#-fill [list $::SystemHighlightText {selected}] ;# full oid
 $TREE element create elemText4 text -text "" -fill { blue selected blue {} } -font [list $::tree_font ""] ;# bookmark
 
 $TREE style create style1
-#$TREE style create style2
 $TREE style elements style1 {elemText4 elemRect elemText elemText2 elemText3 }
-#$TREE style elements style2 {elemText4 elemRect elemText elemText2 elemText3 }
 
 $TREE style layout style1 elemRect -union {elemText elemText2}
 $TREE style layout style1 elemText -ipadx 5
 $TREE style layout style1 elemText2 -ipadx 5
 $TREE style layout style1 elemText3 -ipadx 5
-
-#$TREE style layout style2 elemRect -union {elemText elemText2}
-#$TREE style layout style2 elemText -ipadx 5
-#$TREE style layout style2 elemText2 -ipadx 5
-#$TREE style layout style2 elemText3 -ipadx 5
 
 
 $TREE item configure root -button yes
@@ -188,6 +169,16 @@ proc tree_dbclick {posx posy} {
 	if {[llength $ninfo] < 2} {return}
 	foreach {what itemId where columnId type name} $ninfo {}
 	$TREE item toggle $itemId
+}
+
+proc tree_rclick {posx posy} {
+	global TREE
+	set ninfo [$TREE identify $posx $posy]
+#	puts $ninfo
+	goto_node [dict get $ninfo item]
+#	if {[llength $ninfo] < 2} {return}
+#	foreach {what itemId where columnId type name} $ninfo {}
+#	$TREE item toggle $itemId
 }
 
 #set ::Motion_item ""
